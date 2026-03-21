@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import CloudBackground from '../components/CloudBackground'
@@ -19,6 +19,28 @@ function Reveal({ children, delay = 0, className, style }) {
       transition={{ duration: 1.0, ease: EASE_OUT, delay }}
     >
       {children}
+    </motion.div>
+  )
+}
+
+function ScrollHint() {
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const fn = () => setVisible(window.scrollY < 60)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
+  }, [])
+
+  return (
+    <motion.div
+      className="scroll-hint"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: visible ? 1 : 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <span>scroll</span>
+      <div className="scroll-line" />
     </motion.div>
   )
 }
@@ -52,6 +74,53 @@ const TICKER = [
   { from: 'Strategist', to: 'Intervention', msg: 'Full overlay + content replacement. Severity: HIGH. Redirect → user-defined destination.' },
   { from: 'Synthesis', to: 'Letter', msg: 'Appending paragraph 3 — tactic: outrage amplification · intended emotion: moral outrage — blocked.' },
 ]
+
+function AgentFeed({ messages }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-80px' })
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!inView || count >= messages.length) return
+    const delay = count === 0 ? 500 : 600 + Math.random() * 500
+    const id = setTimeout(() => setCount(c => c + 1), delay)
+    return () => clearTimeout(id)
+  }, [inView, count, messages.length])
+
+  return (
+    <div ref={ref} className="ticker-card">
+      <div className="ticker-header">
+        <div className="ticker-dot" />
+        <span className="ticker-label">Agent communication layer</span>
+        <span className="ticker-live">● Live</span>
+      </div>
+      <div className="ticker-msgs">
+        {messages.slice(0, count).map((row, i) => (
+          <motion.div
+            key={i}
+            className="ticker-line"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.45, ease: EASE_OUT }}
+          >
+            <span className="t-agent">{row.from}</span>
+            <span className="t-arrow">→</span>
+            <span className="t-agent">{row.to}</span>
+            &nbsp;
+            {row.flag && <span className="t-flag">{row.flag}</span>}
+            {row.msg}
+            {row.conf && <span className="t-conf">{row.conf}</span>}
+          </motion.div>
+        ))}
+        {inView && count < messages.length && (
+          <div className="ticker-typing">
+            <span /><span /><span />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -114,16 +183,20 @@ export default function Landing() {
             </button>
           </motion.div>
 
-          <motion.div
-            className="scroll-hint"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.1, duration: 1.2 }}
-          >
-            <span>scroll</span>
-            <div className="scroll-line" />
-          </motion.div>
+          <ScrollHint />
         </section>
+
+        <div className="marquee" aria-hidden>
+          <div className="marquee-track">
+            {[...Array(2)].map((_, copy) => (
+              <div className="marquee-content" key={copy}>
+                {['Scout', 'Classify', 'Intervene', 'Real-time defense', 'AI agents', 'Mental health', 'Brain rot detection', 'Feed analysis'].map(t => (
+                  <span key={t}>{t}<span className="marquee-dot">·</span></span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
 
         <section className="features" id="how-it-works">
           <Reveal className="features-header">
@@ -131,6 +204,19 @@ export default function Landing() {
             <h2 className="section-heading">
               How dialed<br />defends your attention.
             </h2>
+          </Reveal>
+
+          <Reveal>
+            <div className="pipeline">
+              {['Content', 'Scout', 'Classify', 'Intervene', 'Safe'].map((step, i, arr) => (
+                <div className="pipeline-step" key={step}>
+                  <span className="pipeline-node">{step}</span>
+                  {i < arr.length - 1 && (
+                    <span className="pipeline-arrow">→</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </Reveal>
 
           <div className="features-grid">
@@ -147,6 +233,20 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="stats">
+          {[
+            { value: '5',        label: 'Coordinated agents' },
+            { value: '<5s',      label: 'Classification latency' },
+            { value: '4',        label: 'Intervention types' },
+            { value: 'Real-time', label: 'Feed defense' },
+          ].map((s, i) => (
+            <Reveal key={s.label} delay={i * 0.08} className="stat">
+              <span className="stat-value">{s.value}</span>
+              <span className="stat-label">{s.label}</span>
+            </Reveal>
+          ))}
+        </section>
+
         <section className="agents" id="agents">
           <Reveal>
             <p className="section-label">Live agent feed</p>
@@ -156,26 +256,7 @@ export default function Landing() {
           </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="ticker-card">
-              <div className="ticker-header">
-                <div className="ticker-dot" />
-                <span className="ticker-label">Agent communication layer</span>
-                <span className="ticker-live">● Live</span>
-              </div>
-              <div className="ticker-msgs">
-                {TICKER.map((row, i) => (
-                  <div key={i} className="ticker-line">
-                    <span className="t-agent">{row.from}</span>
-                    <span className="t-arrow">→</span>
-                    <span className="t-agent">{row.to}</span>
-                    &nbsp;
-                    {row.flag && <span className="t-flag">{row.flag}</span>}
-                    {row.msg}
-                    {row.conf && <span className="t-conf">{row.conf}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <AgentFeed messages={TICKER} />
           </Reveal>
         </section>
 
@@ -195,6 +276,18 @@ export default function Landing() {
             </div>
           </Reveal>
         </section>
+
+        <div className="marquee marquee--reverse" aria-hidden>
+          <div className="marquee-track marquee-track--reverse">
+            {[...Array(2)].map((_, copy) => (
+              <div className="marquee-content" key={copy}>
+                {['Fetch.ai', 'Claude Sonnet', 'browser-use', 'Chromium', 'Supabase', 'React', 'Vite', 'DOM injection'].map(t => (
+                  <span key={t}>{t}<span className="marquee-dot">·</span></span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
 
         <section className="cta-section">
           <Reveal>
