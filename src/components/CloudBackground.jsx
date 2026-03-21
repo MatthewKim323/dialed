@@ -69,7 +69,7 @@ vec4 map(in vec3 p) {
   vec4 res = vec4(d);
   vec3 col = 1.15 * vec3(1.0, 0.95, 0.8);
   col += vec3(1.0, 0.0, 0.0) * exp2(res.x * 10.0 - 10.0);
-  res.xyz = mix(col, vec3(0.7, 0.7, 0.7), res.x);
+  res.xyz = mix(col, vec3(0.88, 0.87, 0.86), res.x);
   return res;
 }
 
@@ -130,9 +130,9 @@ vec4 raymarch(in vec3 ro, in vec3 rd) {
     vec4 col = map(pos);
 
     float dif = clamp((col.w - map(pos + 0.6 * sundir).w) / 0.6, 0.0, 1.0);
-    vec3  lin = vec3(0.51, 0.53, 0.63) * 1.35 + 0.55 * vec3(0.85, 0.57, 0.3) * dif;
+    vec3  lin = vec3(0.58, 0.60, 0.68) * 1.45 + 0.55 * vec3(0.85, 0.57, 0.3) * dif;
     col.xyz *= lin;
-    col.xyz *= col.xyz;
+    col.xyz = pow(col.xyz, vec3(1.7));
     col.a   *= 0.35;
     col.rgb *= col.a;
 

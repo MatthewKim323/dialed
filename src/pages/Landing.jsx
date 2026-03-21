@@ -45,6 +45,56 @@ function ScrollHint() {
   )
 }
 
+function ScoutVisual() {
+  return (
+    <div className="vis-scout">
+      <div className="vis-scout-line" />
+      {['@viral.acct — Reel #14', '@rage.bait — Story #7', '@fomo.page — Post #22'].map((t, i) => (
+        <div className="vis-scout-item" key={i} style={{ animationDelay: `${i * 0.3}s` }}>
+          <span className="vis-scout-dot" />
+          <span>{t}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ClassifyVisual() {
+  return (
+    <div className="vis-classify">
+      {[
+        { label: 'Rage bait', conf: 91 },
+        { label: 'FOMO hook', conf: 74 },
+        { label: 'Parasocial', conf: 45 },
+        { label: 'Outrage amp', conf: 88 },
+      ].map((t, i) => (
+        <div className="vis-classify-row" key={i}>
+          <span className="vis-classify-label">{t.label}</span>
+          <div className="vis-classify-track">
+            <div className="vis-classify-fill" style={{ '--fill': `${t.conf}%`, animationDelay: `${i * 0.15}s` }} />
+          </div>
+          <span className="vis-classify-conf">{t.conf}%</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function InterveneVisual() {
+  return (
+    <div className="vis-intervene">
+      <div className="vis-intervene-content">
+        <div className="vis-intervene-line" />
+        <div className="vis-intervene-line vis-intervene-line--short" />
+        <div className="vis-intervene-line" />
+      </div>
+      <div className="vis-intervene-shield">
+        <span>Blocked</span>
+      </div>
+    </div>
+  )
+}
+
 const FEATURES = [
   {
     num: '01',
@@ -90,7 +140,9 @@ function AgentFeed({ messages }) {
   return (
     <div ref={ref} className="ticker-card">
       <div className="ticker-header">
-        <div className="ticker-dot" />
+        <div className="ticker-dot">
+          {count > 0 && <span key={count} className="ticker-pulse" />}
+        </div>
         <span className="ticker-label">Agent communication layer</span>
         <span className="ticker-live">● Live</span>
       </div>
@@ -132,6 +184,25 @@ export default function Landing() {
 
       <div className="page">
         <section className="hero">
+          <div className="hero-particles" aria-hidden>
+            {[
+              { x: '8%',  size: '2px', alpha: 0.4, dur: '9s',  delay: '0s'   },
+              { x: '18%', size: '3px', alpha: 0.55, dur: '11s', delay: '2s'   },
+              { x: '32%', size: '2px', alpha: 0.35, dur: '13s', delay: '4s'   },
+              { x: '45%', size: '4px', alpha: 0.5, dur: '10s', delay: '1s'   },
+              { x: '58%', size: '2px', alpha: 0.3, dur: '14s', delay: '6s'   },
+              { x: '70%', size: '3px', alpha: 0.45, dur: '12s', delay: '3s'   },
+              { x: '82%', size: '2px', alpha: 0.4, dur: '11s', delay: '5s'   },
+              { x: '93%', size: '3px', alpha: 0.5, dur: '9s',  delay: '7s'   },
+              { x: '25%', size: '2px', alpha: 0.3, dur: '15s', delay: '8s'   },
+              { x: '55%', size: '3px', alpha: 0.45, dur: '10s', delay: '0.5s' },
+              { x: '75%', size: '2px', alpha: 0.35, dur: '13s', delay: '3.5s' },
+              { x: '40%', size: '4px', alpha: 0.5, dur: '11s', delay: '9s'   },
+            ].map((p, i) => (
+              <span key={i} style={{ '--x': p.x, '--size': p.size, '--alpha': p.alpha, '--dur': p.dur, '--delay': p.delay }} />
+            ))}
+          </div>
+
           <motion.p
             className="hero-eyebrow"
             initial={{ opacity: 0, y: 16 }}
@@ -212,21 +283,31 @@ export default function Landing() {
                 <div className="pipeline-step" key={step}>
                   <span className="pipeline-node">{step}</span>
                   {i < arr.length - 1 && (
-                    <span className="pipeline-arrow">→</span>
+                    <span className="pipeline-connector">
+                      <span className="pipeline-line" />
+                      <span className="pipeline-dot" style={{ animationDelay: `${i * 0.6}s` }} />
+                    </span>
                   )}
                 </div>
               ))}
             </div>
           </Reveal>
 
-          <div className="features-grid">
+          <div className="features-stack">
             {FEATURES.map((f, i) => (
               <Reveal key={f.num} delay={i * 0.11}>
                 <div className="feature-card">
-                  <span className="feature-num">{f.num}</span>
-                  <h3 className="feature-title">{f.title}</h3>
-                  <p className="feature-desc">{f.desc}</p>
-                  <span className="feature-detail">{f.detail}</span>
+                  <div className="feature-text">
+                    <span className="feature-num">{f.num}</span>
+                    <h3 className="feature-title">{f.title}</h3>
+                    <p className="feature-desc">{f.desc}</p>
+                    <span className="feature-detail">{f.detail}</span>
+                  </div>
+                  <div className="feature-visual">
+                    {f.num === '01' && <ScoutVisual />}
+                    {f.num === '02' && <ClassifyVisual />}
+                    {f.num === '03' && <InterveneVisual />}
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -260,21 +341,67 @@ export default function Landing() {
           </Reveal>
         </section>
 
-        <section className="letter-section">
+        <section className="journey" id="letter">
           <Reveal>
-            <div className="letter-card">
-              <p className="section-label">Letter from the algorithm</p>
-              <blockquote className="letter-quote">
-                "I showed you the outrage because you were already angry.
-                I knew the comparison would land. I surfaced him again because
-                you paused for 0.3 seconds too long. Every tactic is catalogued here.
-                <em> None of them worked this time.</em>"
-              </blockquote>
-              <cite className="letter-cite">
-                — Generated in real time as dialed intercepted your session
-              </cite>
-            </div>
+            <p className="section-label">Your experience</p>
+            <h2 className="section-heading">
+              Your feed,<br />defended.
+            </h2>
           </Reveal>
+
+          <div className="journey-layout">
+            <div className="journey-steps">
+              {[
+                {
+                  num: 'I',
+                  title: 'Connect',
+                  desc: 'Link your social accounts. The agents need access to see what the algorithm shows you.',
+                },
+                {
+                  num: 'II',
+                  title: 'Browse',
+                  desc: 'Use your feed like normal. Scout watches silently in the background, classifying every piece of content in real time.',
+                },
+                {
+                  num: 'III',
+                  title: 'Stay safe',
+                  desc: 'When brain rot is detected, Dialed intervenes automatically — overlays, redirects, or full scroll locks. A session report writes itself as each tactic is caught.',
+                },
+              ].map((s, i) => (
+                <Reveal key={s.num} delay={i * 0.12}>
+                  <div className="journey-step">
+                    <span className="journey-num">{s.num}</span>
+                    <div>
+                      <h3 className="journey-title">{s.title}</h3>
+                      <p className="journey-desc">{s.desc}</p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal delay={0.15}>
+              <div className="journey-visual">
+                <div className="journey-phone">
+                  <div className="journey-screen">
+                    <div className="journey-screen-bar">
+                      <span className="journey-screen-dot" />
+                      <span className="journey-screen-title">Feed</span>
+                    </div>
+                    <div className="journey-screen-item" />
+                    <div className="journey-screen-item journey-screen-item--flagged">
+                      <span className="journey-screen-flag">Blocked</span>
+                    </div>
+                    <div className="journey-screen-item" />
+                    <div className="journey-screen-status">
+                      <span className="journey-screen-dot journey-screen-dot--live" />
+                      <span>Dialed active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </section>
 
         <div className="marquee marquee--reverse" aria-hidden>
