@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 
 const LINKS = [
   { label: 'How it works', href: '#how-it-works' },
@@ -8,8 +9,15 @@ const LINKS = [
   { label: 'Letter',       href: '#letter'       },
 ]
 
-function NavContent({ pill = false, user = null }) {
+function NavContent({ pill = false }) {
   const navigate = useNavigate()
+  const { user, profile } = useAuth()
+
+  const handleStart = () => {
+    if (user && profile) return navigate('/dashboard')
+    if (user) return navigate('/onboarding')
+    navigate('/login')
+  }
 
   return (
     <>
@@ -29,12 +37,12 @@ function NavContent({ pill = false, user = null }) {
         {!pill && (
           <a href="#" className="nl-link">Docs</a>
         )}
-        <button className="nl-cta" onClick={() => navigate('/login')}>
+        <button className="nl-cta" onClick={handleStart}>
           Start Pipeline
         </button>
         <span className="nl-sep" aria-hidden />
         {user
-          ? <span className="nl-account">{user}</span>
+          ? <span className="nl-account">{user.user_metadata?.name || user.email?.split('@')[0]}</span>
           : <Link to="/login" className="nl-login">Login</Link>
         }
       </div>
@@ -44,7 +52,6 @@ function NavContent({ pill = false, user = null }) {
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
-  const [user]    = useState(null)
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 72)
@@ -64,7 +71,7 @@ export default function Nav() {
             exit={{    opacity: 0, y: -14 }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           >
-            <NavContent user={user} />
+            <NavContent />
           </motion.nav>
         )}
       </AnimatePresence>
@@ -80,7 +87,7 @@ export default function Nav() {
               exit={{    opacity: 0, y: -14,  scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 340, damping: 30 }}
             >
-              <NavContent pill user={user} />
+              <NavContent pill />
             </motion.nav>
           </div>
         )}

@@ -2,5 +2,6 @@ node_modules
 dist
 .DS_Store
 *.local
+.env
 *Project_Plan.md
 *project_plan.md
