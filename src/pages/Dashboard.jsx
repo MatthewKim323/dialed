@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 import './Dashboard.css'
 
 const EASE = [0.22, 1, 0.36, 1]
@@ -11,7 +12,7 @@ const TICKER_SEQUENCE = [
   { delay: 5500,  from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #1 — @travel.vibes — "Golden hour in Santorini" — 43.2K likes',                     type: 'payload' },
   { delay: 7500,  from: 'Boss',       to: 'Classifier',   msg: 'Dispatching for analysis — checking against intent profile triggers',                              type: 'dispatch' },
   { delay: 9000,  from: 'Classifier', to: 'Boss',         msg: 'CLEAR — travel/photography — intent-aligned — conf: 0.08',                                         type: 'clear' },
-  { delay: 12000, from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #2 — @drama.central — "You won\'t BELIEVE what she said 💀"',                       type: 'payload' },
+  { delay: 12000, from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #2 — @drama.central — "You won\'t BELIEVE what she said"',                          type: 'payload' },
   { delay: 14000, from: 'Boss',       to: 'Classifier',   msg: 'Dispatching — flagged patterns: curiosity gap, emotional bait',                                    type: 'dispatch' },
   { delay: 15500, from: 'Classifier', to: 'Boss',         msg: 'BRAIN ROT — clickbait + engagement bait — conf: 0.87',                                             type: 'alert' },
   { delay: 16500, from: 'Context',    to: 'Boss',         msg: 'State: NORMAL — concur with verdict — no intervention fatigue',                                     type: 'context' },
@@ -75,6 +76,7 @@ function TypeLabel({ type }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { user, profile, signOut, loading: authLoading } = useAuth()
   const tickerRef = useRef(null)
 
   const [sessionTime, setSessionTime] = useState(0)
@@ -83,6 +85,11 @@ export default function Dashboard() {
   const [letterStarted, setLetterStarted] = useState(false)
   const [stats, setStats] = useState({ scanned: 0, detected: 0, interventions: 0, reclaimed: 0 })
   const [sessionState, setSessionState] = useState('NORMAL')
+
+  // Auth gate
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/login', { replace: true })
+  }, [authLoading, user, navigate])
 
   // Session timer
   useEffect(() => {
@@ -131,11 +138,19 @@ export default function Dashboard() {
     }
   }, [messages])
 
+  const handleEndSession = async () => {
+    await signOut()
+    navigate('/')
+  }
+
+  if (authLoading) return null
+
   const stateStyle = STATE_COLORS[sessionState]
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || ''
 
   return (
     <div className="dash">
-      {/* ── Nav ── */}
+      {/* Nav */}
       <motion.nav
         className="dash-nav"
         initial={{ opacity: 0, y: -10 }}
@@ -162,13 +177,14 @@ export default function Dashboard() {
         </div>
 
         <div className="dash-nav-right">
-          <button className="dash-end" onClick={() => navigate('/')}>
+          {userName && <span className="dash-user">{userName}</span>}
+          <button className="dash-end" onClick={handleEndSession}>
             End Session
           </button>
         </div>
       </motion.nav>
 
-      {/* ── Main grid ── */}
+      {/* Main grid */}
       <div className="dash-grid">
         {/* Left: Scout Stream */}
         <motion.div
@@ -200,7 +216,6 @@ export default function Dashboard() {
 
         {/* Center: Ticker + Letter */}
         <div className="dash-center">
-          {/* Agent Ticker */}
           <motion.div
             className="dash-panel dash-ticker"
             initial={{ opacity: 0, y: 20 }}
@@ -241,7 +256,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Letter */}
           <motion.div
             className="dash-panel dash-letter"
             initial={{ opacity: 0, y: 20 }}
@@ -296,7 +310,7 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ── Status bar ── */}
+      {/* Status bar */}
       <motion.footer
         className="dash-status"
         initial={{ opacity: 0, y: 10 }}

@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 import CloudBackground from '../components/CloudBackground'
 import './Onboarding.css'
 
@@ -82,10 +83,24 @@ const slideVariants = {
 
 export default function Onboarding() {
   const navigate = useNavigate()
+  const { user, profile, saveProfile, loading: authLoading } = useAuth()
+
   const [step, setStep] = useState(0)
   const [dir, setDir] = useState(1)
   const [answers, setAnswers] = useState({})
   const [customUrl, setCustomUrl] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/login', { replace: true })
+  }, [authLoading, user, navigate])
+
+  // Skip onboarding if profile already exists
+  useEffect(() => {
+    if (profile) navigate('/dashboard', { replace: true })
+  }, [profile, navigate])
 
   const current = STEPS[step]
   const selected = answers[current.id] || []
@@ -108,15 +123,24 @@ export default function Onboarding() {
   const canContinue = selected.length > 0
   const isLast = step === STEPS.length - 1
 
-  const next = () => {
+  const next = async () => {
     if (!canContinue) return
+
     if (isLast) {
-      const profile = { ...answers }
-      if (customUrl) profile.customUrl = customUrl
-      sessionStorage.setItem('dialed-profile', JSON.stringify(profile))
-      navigate('/dashboard')
+      setSaving(true)
+      setError('')
+      try {
+        const intentProfile = { ...answers }
+        if (customUrl) intentProfile.customUrl = customUrl
+        await saveProfile(intentProfile)
+        navigate('/dashboard')
+      } catch (err) {
+        setError(err.message || 'Failed to save profile.')
+        setSaving(false)
+      }
       return
     }
+
     setDir(1)
     setStep(s => s + 1)
   }
@@ -126,6 +150,8 @@ export default function Onboarding() {
     setDir(-1)
     setStep(s => s - 1)
   }
+
+  if (authLoading) return null
 
   return (
     <>
@@ -142,7 +168,6 @@ export default function Onboarding() {
           <span className="ob-step-label">Step {step + 1} of {STEPS.length}</span>
         </motion.header>
 
-        {/* Progress dots */}
         <div className="ob-progress">
           {STEPS.map((_, i) => (
             <div
@@ -156,7 +181,6 @@ export default function Onboarding() {
           ))}
         </div>
 
-        {/* Question content with slide transitions */}
         <main className="ob-main">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div
@@ -205,7 +229,6 @@ export default function Onboarding() {
                 })}
               </div>
 
-              {/* Custom URL input */}
               {current.id === 'redirect' && selected.includes('url') && (
                 <motion.div
                   className="ob-url-field"
@@ -223,11 +246,12 @@ export default function Onboarding() {
                   />
                 </motion.div>
               )}
+
+              {error && <p className="ob-error">{error}</p>}
             </motion.div>
           </AnimatePresence>
         </main>
 
-        {/* Navigation */}
         <footer className="ob-footer">
           <button
             className="ob-back"
@@ -239,13 +263,19 @@ export default function Onboarding() {
           <button
             className={'ob-continue' + (isLast ? ' ob-continue--launch' : '')}
             onClick={next}
-            disabled={!canContinue}
+            disabled={!canContinue || saving}
           >
-            {isLast ? 'Launch session' : 'Continue'}
-            {!isLast && (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: 6 }}>
-                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+            {saving ? (
+              <span className="ob-spinner" />
+            ) : isLast ? (
+              'Launch session'
+            ) : (
+              <>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: 6 }}>
+                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </>
             )}
           </button>
         </footer>

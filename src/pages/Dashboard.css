@@ -121,6 +121,14 @@
   background: rgba(239, 68, 68, 0.06);
 }
 
+.dash-user {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--d-text-muted);
+  margin-right: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
 /* ── Main grid ───────────────────────────────────────────────────────────── */
 .dash-grid {
   flex: 1;
