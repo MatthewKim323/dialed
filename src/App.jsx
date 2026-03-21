@@ -2,6 +2,7 @@ import './App.css'
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import CloudBackground from './components/CloudBackground'
+import Nav from './components/Nav'
 
 // ── Shared easing ─────────────────────────────────────────────────────────
 const EASE_OUT = [0.22, 1, 0.36, 1]
@@ -60,19 +61,7 @@ export default function App() {
       <CloudBackground />
 
       {/* ── Nav ── */}
-      <motion.nav
-        className="nav"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: EASE_OUT }}
-      >
-        <a href="#" className="nav-logo">dialed.</a>
-        <ul className="nav-links">
-          <li><a href="#how-it-works">How it works</a></li>
-          <li><a href="#agents">Agents</a></li>
-          <li><a href="#" className="nav-cta">Open demo →</a></li>
-        </ul>
-      </motion.nav>
+      <Nav />
 
       <div className="page">
         {/* ── Hero ── */}
