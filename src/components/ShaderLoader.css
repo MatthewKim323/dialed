@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHADER LOADER — planet intro
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sl {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    160deg,
+    #dfe5ed 0%,
+    #e4ddd6 30%,
+    #d9dee8 60%,
+    #ede5df 100%
+  );
+  /* background fades AFTER the planet content is gone */
+  transition: opacity 1s 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+
+.sl--fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Inner wrapper ─────────────────────────────────────────────────────── */
+.sl-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6rem;
+  position: relative;
+}
+
+/* ── Canvas ────────────────────────────────────────────────────────────── */
+.sl-canvas {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  display: block;
+  mask-image: radial-gradient(circle, black 35%, transparent 49%);
+  -webkit-mask-image: radial-gradient(circle, black 35%, transparent 49%);
+  transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sl--fading .sl-canvas {
+  opacity: 0;
+  transform: scale(1.08);
+}
+
+/* ── Glow behind the planet ────────────────────────────────────────────── */
+.sl-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  transform: translate(-50%, calc(-50% - 10px));
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(180, 160, 140, 0.18) 0%,
+    rgba(160, 170, 190, 0.08) 45%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: sl-glow-pulse 3.5s ease-in-out infinite;
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sl-glow-pulse {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, calc(-50% - 10px)) scale(1); }
+  50%      { opacity: 1; transform: translate(-50%, calc(-50% - 10px)) scale(1.06); }
+}
+
+.sl--fading .sl-glow {
+  opacity: 0;
+}
+

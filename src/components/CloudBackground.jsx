@@ -35,7 +35,7 @@ out vec4 fragColor;
 // ── Globals set in main(), read by helpers ────────────────────────────────
 bool  useNewApproach   = true;
 vec3  lookDir          = vec3(-1.0, 0.0, 0.0);
-vec3  camVel           = vec3(-3.0, 0.0, 0.0);
+vec3  camVel           = vec3(-0.8, 0.0, 0.0);
 float samplesCurvature = 0.0;
 // Pre-computed normalize(-1,0,-1)
 vec3  sundir = vec3(-0.70710678118, 0.0, -0.70710678118);
