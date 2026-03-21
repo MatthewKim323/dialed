@@ -111,8 +111,8 @@ const FEATURES = [
   {
     num: '03',
     title: 'Intervene',
-    desc: 'A second browser agent fires the defense in real time: warning overlays, content replacement, hard redirects, or a full scroll lock. The Algorithm\'s letter writes itself as each tactic is caught.',
-    detail: 'DOM injection · 4 intervention types · session report',
+    desc: 'The defense fires directly on the same feed — warning overlays, content replacement, hard redirects, or a full scroll lock. One browser, one session. The Algorithm\'s letter writes itself as each tactic is caught.',
+    detail: 'single session · DOM injection · 4 intervention types · session report',
   },
 ]
 
@@ -317,6 +317,7 @@ export default function Landing() {
         <section className="stats">
           {[
             { value: '5',        label: 'Coordinated agents' },
+            { value: '5',        label: 'Distinct agent voices' },
             { value: '<5s',      label: 'Classification latency' },
             { value: '4',        label: 'Intervention types' },
             { value: 'Real-time', label: 'Feed defense' },
@@ -328,20 +329,7 @@ export default function Landing() {
           ))}
         </section>
 
-        <section className="agents" id="agents">
-          <Reveal>
-            <p className="section-label">Live agent feed</p>
-            <h2 className="section-heading">
-              The intelligence layer,<br />thinking aloud.
-            </h2>
-          </Reveal>
-
-          <Reveal delay={0.15}>
-            <AgentFeed messages={TICKER} />
-          </Reveal>
-        </section>
-
-        <section className="journey" id="letter">
+        <section className="journey">
           <Reveal>
             <p className="section-label">Your experience</p>
             <h2 className="section-heading">
@@ -404,11 +392,147 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="dashboard-preview">
+          <Reveal>
+            <p className="section-label">The command center</p>
+            <h2 className="section-heading">
+              Three panels.<br />Total visibility.
+            </h2>
+          </Reveal>
+
+          <Reveal delay={0.12}>
+            <div className="dash-tri">
+              <div className="dash-panel dash-panel--feed">
+                <span className="dash-panel-label">Live feed</span>
+                <div className="dash-panel-mock">
+                  <div className="dash-mock-row" />
+                  <div className="dash-mock-row dash-mock-row--flagged" />
+                  <div className="dash-mock-row" />
+                </div>
+                <span className="dash-panel-desc">Single browser session — overlays fire directly on flagged content</span>
+              </div>
+              <div className="dash-panel dash-panel--comms">
+                <span className="dash-panel-label">Agent comms + Letter</span>
+                <div className="dash-panel-mock">
+                  <div className="dash-mock-line" /><div className="dash-mock-line dash-mock-line--short" /><div className="dash-mock-line" />
+                  <div className="dash-mock-sep" />
+                  <div className="dash-mock-line dash-mock-line--italic" /><div className="dash-mock-line dash-mock-line--italic dash-mock-line--short" />
+                </div>
+                <span className="dash-panel-desc">Real-time agent deliberation log and the Algorithm's letter</span>
+              </div>
+              <div className="dash-panel dash-panel--cmd">
+                <span className="dash-panel-label">Command center</span>
+                <div className="dash-panel-mock">
+                  <div className="dash-mock-avatar-row">
+                    {['B', 'C', 'X', 'S', 'A'].map(l => (
+                      <span className="dash-mock-avatar" key={l}>{l}</span>
+                    ))}
+                  </div>
+                  <div className="dash-mock-chat">
+                    <div className="dash-mock-bubble dash-mock-bubble--user" />
+                    <div className="dash-mock-bubble dash-mock-bubble--agent" />
+                  </div>
+                </div>
+                <span className="dash-panel-desc">Agent cards with voice + user chat to command the swarm</span>
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
+        <section className="agents" id="agents">
+          <Reveal>
+            <p className="section-label">Live agent feed</p>
+            <h2 className="section-heading">
+              The intelligence layer,<br />thinking aloud.
+            </h2>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <AgentFeed messages={TICKER} />
+          </Reveal>
+        </section>
+
+        <section className="voice-layer">
+          <Reveal>
+            <p className="section-label">Voice layer</p>
+            <h2 className="section-heading">
+              Five agents.<br />Five voices.
+            </h2>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <p className="voice-intro">
+              Every agent in the swarm has a distinct ElevenLabs voice. Hover over an agent card and hear it think aloud — the Boss dispatching, the Classifier analyzing, the Strategist escalating. The Letter narrates itself in the algorithm's own cold, corporate voice.
+            </p>
+          </Reveal>
+
+          <div className="voice-agents">
+            {[
+              { initial: 'B', name: 'Boss',       tone: 'Authoritative · steady cadence' },
+              { initial: 'C', name: 'Classifier',  tone: 'Clinical · flat affect' },
+              { initial: 'X', name: 'Context',     tone: 'Cautious · measured pace' },
+              { initial: 'S', name: 'Strategist',  tone: 'Decisive · crisp delivery' },
+              { initial: 'A', name: 'Synthesis',   tone: 'Cold · confessional calm' },
+            ].map((a, i) => (
+              <Reveal key={a.name} delay={i * 0.08}>
+                <div className="voice-card">
+                  <span className="voice-avatar">{a.initial}</span>
+                  <div className="voice-wave">
+                    {[...Array(5)].map((_, j) => (
+                      <span key={j} className="voice-bar" style={{ animationDelay: `${j * 0.12}s` }} />
+                    ))}
+                  </div>
+                  <span className="voice-name">{a.name}</span>
+                  <span className="voice-tone">{a.tone}</span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <section className="command-center">
+          <Reveal>
+            <p className="section-label">User control</p>
+            <h2 className="section-heading">
+              You command<br />the swarm.
+            </h2>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            <p className="cmd-intro">
+              This isn't a passive demo. Talk to your agents mid-session — adjust aggressiveness, whitelist creators, ask for explanations. They respond in their own voice.
+            </p>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <div className="cmd-chat-demo">
+              {[
+                { role: 'user',  text: 'Go more aggressive.' },
+                { role: 'agent', agent: 'Context', text: 'Shifting to Elevated state. Thresholds tightened — near-zero tolerance active.' },
+                { role: 'user',  text: 'Why did you flag that last one?' },
+                { role: 'agent', agent: 'Classifier', text: 'Rage bait detected. Outrage amplification pattern with 0.91 confidence. Creator @drama_daily_tea flagged twice this session.' },
+                { role: 'user',  text: 'How much time have you saved me?' },
+                { role: 'agent', agent: 'Boss', text: '23 Reels scanned. 9 brain rot detections. 6 interventions. 4 min 12 sec reclaimed.' },
+              ].map((m, i) => (
+                <Reveal key={i} delay={i * 0.08}>
+                  <div className={`cmd-bubble cmd-bubble--${m.role}`}>
+                    {m.agent && <span className="cmd-agent">{m.agent}</span>}
+                    <span>{m.text}</span>
+                  </div>
+                </Reveal>
+              ))}
+              <div className="cmd-input-mock">
+                <span>Talk to your agents...</span>
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
         <div className="marquee marquee--reverse" aria-hidden>
           <div className="marquee-track marquee-track--reverse">
             {[...Array(2)].map((_, copy) => (
               <div className="marquee-content" key={copy}>
-                {['Fetch.ai', 'Claude Sonnet', 'browser-use', 'Chromium', 'Supabase', 'React', 'Vite', 'DOM injection'].map(t => (
+                {['Fetch.ai', 'Claude Sonnet', 'ElevenLabs', 'browser-use', 'Chromium', 'Supabase', 'React', 'Vite', 'DOM injection'].map(t => (
                   <span key={t}>{t}<span className="marquee-dot">·</span></span>
                 ))}
               </div>
@@ -416,7 +540,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <section className="cta-section">
+        <section className="cta-section" id="get-started">
           <Reveal>
             <h2 className="cta-heading">Stay dialed in.</h2>
           </Reveal>

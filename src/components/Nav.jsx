@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 const LINKS = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Agents',       href: '#agents'       },
-  { label: 'Get started',  href: '#letter'       },
+  { label: 'Get started',  href: '#get-started'  },
 ]
 
 function UserMenu() {
