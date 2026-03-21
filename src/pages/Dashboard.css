@@ -609,7 +609,174 @@
   font-weight: 400;
 }
 
+/* ── Social credentials ──────────────────────────────────────────────────── */
+.lobby-social {
+  width: 100%;
+  margin-bottom: 1.75rem;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  text-align: left;
+}
+
+.lobby-social-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.lobby-ig-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.lobby-social-title {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lobby-social-connected {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1e8449;
+}
+
+.lobby-connected-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2a9d5c;
+}
+
+.lobby-cred-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lobby-cred-input {
+  width: 100%;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.lobby-cred-input::placeholder {
+  color: var(--text-light);
+}
+
+.lobby-cred-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(46, 110, 168, 0.1);
+}
+
+.lobby-cred-error {
+  font-size: 0.68rem;
+  color: #C0502A;
+}
+
+.lobby-cred-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+}
+
+.lobby-cred-save {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 0.48rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lobby-cred-save:hover { background: #1e5c94; }
+.lobby-cred-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.lobby-cred-cancel {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0.48rem 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lobby-cred-cancel:hover { background: rgba(0, 0, 0, 0.03); }
+
+.lobby-cred-note {
+  font-size: 0.58rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin-top: 0.2rem;
+}
+
+.lobby-cred-saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lobby-cred-saved-user {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.lobby-cred-edit {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: opacity 0.15s;
+}
+
+.lobby-cred-edit:hover { opacity: 0.65; }
+
 /* ── Start button ────────────────────────────────────────────────────────── */
+.lobby-start--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lobby-start--disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
 .lobby-start {
   display: flex;
   align-items: center;

@@ -37,6 +37,12 @@ class ReelBatch(BaseModel):
     items: list[ReelContent]
 
 
+class StartSessionRequest(BaseModel):
+    platform: str = "instagram"
+    username: str = ""
+    password: str = ""
+
+
 class SessionResponse(BaseModel):
     scout_live_url: str
     intervention_live_url: str
@@ -59,6 +65,7 @@ class AppState:
         self.content_index = 0
         self.stats = {"scanned": 0, "detected": 0, "interventions": 0, "reclaimed": 0}
         self.session_state = "NORMAL"
+        self.social_creds: Optional[StartSessionRequest] = None
 
 state = AppState()
 
@@ -78,17 +85,47 @@ async def broadcast(data: dict):
 # ── Scout Loop ────────────────────────────────────────────────────────────
 
 async def scout_loop():
-    """Scroll Instagram Reels and extract structured content in a loop."""
+    """Log into Instagram (if creds provided), scroll Reels, extract content."""
     if not state.scout_session:
         return
 
     session_id = state.scout_session.id
+    creds = state.social_creds
 
     await broadcast({
         "type": "ticker", "from": "System", "to": "Scout",
         "msg": "Session initialized — connecting to Instagram feed",
         "msg_type": "system",
     })
+
+    # Log in if credentials are provided
+    if creds and creds.username and creds.password:
+        try:
+            await broadcast({
+                "type": "ticker", "from": "Scout", "to": "System",
+                "msg": f"Logging into Instagram as @{creds.username}...",
+                "msg_type": "system",
+            })
+            await client.run(
+                f"Navigate to instagram.com/accounts/login/. "
+                f"Enter the username '{creds.username}' into the username field. "
+                f"Enter the password '{creds.password}' into the password field. "
+                f"Click the Log In button and wait for the page to fully load. "
+                f"If a 'Save Your Login Info' or 'Turn on Notifications' dialog appears, dismiss it.",
+                session_id=session_id,
+            )
+            await broadcast({
+                "type": "ticker", "from": "Scout", "to": "System",
+                "msg": f"Authenticated as @{creds.username}. Navigating to feed.",
+                "msg_type": "system",
+            })
+        except Exception as e:
+            await broadcast({
+                "type": "ticker", "from": "Scout", "to": "System",
+                "msg": f"Login error: {str(e)[:120]}",
+                "msg_type": "system",
+            })
+            return
 
     # Navigate to Reels
     try:
@@ -164,7 +201,7 @@ async def scout_loop():
 # ── Endpoints ─────────────────────────────────────────────────────────────
 
 @app.post("/api/session/start", response_model=SessionResponse)
-async def start_session():
+async def start_session(req: StartSessionRequest = StartSessionRequest()):
     """Create two browser-use Cloud sessions (Scout + Intervention) and start the scout loop."""
     if state.scout_session or state.intervention_session:
         await stop_session()
@@ -177,6 +214,7 @@ async def start_session():
 
     state.scout_session = scout
     state.intervention_session = intervention
+    state.social_creds = req
     state.content_index = 0
     state.stats = {"scanned": 0, "detected": 0, "interventions": 0, "reclaimed": 0}
     state.session_state = "NORMAL"

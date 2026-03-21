@@ -83,9 +83,42 @@ function TypeLabel({ type }) {
    LOBBY — Pre-session screen
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function Lobby({ user, profile, onStart }) {
+function Lobby({ user, profile, onStart, saveSocialCreds }) {
   const navigate = useNavigate()
   const name = user?.user_metadata?.name || user?.email?.split('@')[0] || ''
+
+  const hasSavedCreds = !!profile?.ig_username
+  const [showCredForm, setShowCredForm] = useState(!hasSavedCreds)
+  const [igUser, setIgUser] = useState(profile?.ig_username || '')
+  const [igPass, setIgPass] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [credError, setCredError] = useState(null)
+
+  useEffect(() => {
+    if (profile?.ig_username) {
+      setIgUser(profile.ig_username)
+      setShowCredForm(false)
+    }
+  }, [profile])
+
+  const handleSaveCreds = async () => {
+    if (!igUser.trim() || !igPass.trim()) {
+      setCredError('Both fields are required')
+      return
+    }
+    setSaving(true)
+    setCredError(null)
+    try {
+      await saveSocialCreds('ig', igUser.trim(), igPass.trim())
+      setShowCredForm(false)
+    } catch (err) {
+      setCredError(err.message || 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const canStart = !!profile?.ig_username
 
   return (
     <div className="lobby">
@@ -128,14 +161,87 @@ function Lobby({ user, profile, onStart }) {
             </div>
           )}
 
-          <button className="lobby-start" onClick={onStart}>
+          {/* ── Social account section ─────────────────────────────── */}
+          <div className="lobby-social">
+            <div className="lobby-social-header">
+              <svg className="lobby-ig-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="2" y="2" width="20" height="20" rx="5"/>
+                <circle cx="12" cy="12" r="5"/>
+                <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/>
+              </svg>
+              <span className="lobby-social-title">Instagram</span>
+              {hasSavedCreds && !showCredForm && (
+                <span className="lobby-social-connected">
+                  <span className="lobby-connected-dot" />
+                  Connected
+                </span>
+              )}
+            </div>
+
+            {showCredForm ? (
+              <div className="lobby-cred-form">
+                <input
+                  className="lobby-cred-input"
+                  type="text"
+                  placeholder="Username"
+                  value={igUser}
+                  onChange={e => setIgUser(e.target.value)}
+                  autoComplete="username"
+                />
+                <input
+                  className="lobby-cred-input"
+                  type="password"
+                  placeholder="Password"
+                  value={igPass}
+                  onChange={e => setIgPass(e.target.value)}
+                  autoComplete="current-password"
+                />
+                {credError && <p className="lobby-cred-error">{credError}</p>}
+                <div className="lobby-cred-actions">
+                  <button
+                    className="lobby-cred-save"
+                    onClick={handleSaveCreds}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save'}
+                  </button>
+                  {hasSavedCreds && (
+                    <button className="lobby-cred-cancel" onClick={() => setShowCredForm(false)}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+                <p className="lobby-cred-note">
+                  Credentials are used only by your browser agents to access your feed. Never shared.
+                </p>
+              </div>
+            ) : (
+              <div className="lobby-cred-saved">
+                <span className="lobby-cred-saved-user">@{profile?.ig_username}</span>
+                <button className="lobby-cred-edit" onClick={() => { setShowCredForm(true); setIgPass('') }}>
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            className={`lobby-start ${!canStart ? 'lobby-start--disabled' : ''}`}
+            onClick={canStart ? onStart : undefined}
+            disabled={!canStart}
+          >
             <span className="lobby-start-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </span>
             Start Pipeline
           </button>
 
-          <p className="lobby-hint">Your agents will begin monitoring your Instagram feed in real time.</p>
+          {!canStart && (
+            <p className="lobby-hint">Connect your Instagram account above to start the pipeline.</p>
+          )}
+          {canStart && (
+            <p className="lobby-hint">Your agents will log into your Instagram and begin monitoring your feed in real time.</p>
+          )}
         </motion.div>
 
         {!profile && (
@@ -161,7 +267,7 @@ function Lobby({ user, profile, onStart }) {
    ACTIVE SESSION
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function ActiveSession({ onEnd }) {
+function ActiveSession({ onEnd, credentials }) {
   const tickerRef = useRef(null)
   const wsRef = useRef(null)
 
@@ -183,13 +289,21 @@ function ActiveSession({ onEnd }) {
     return () => clearInterval(iv)
   }, [])
 
-  // Try to connect to backend
+  // Try to connect to backend with credentials
   useEffect(() => {
     let cancelled = false
 
     const startSession = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/session/start`, { method: 'POST' })
+        const res = await fetch(`${API_URL}/api/session/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            platform: credentials?.platform || 'instagram',
+            username: credentials?.username || '',
+            password: credentials?.password || '',
+          }),
+        })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         if (cancelled) return
@@ -494,7 +608,7 @@ function ActiveSession({ onEnd }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, saveSocialCreds } = useAuth()
   const [sessionActive, setSessionActive] = useState(false)
 
   useEffect(() => {
@@ -502,6 +616,10 @@ export default function Dashboard() {
   }, [authLoading, user, navigate])
 
   if (authLoading) return null
+
+  const credentials = profile?.ig_username
+    ? { platform: 'instagram', username: profile.ig_username, password: profile.ig_password }
+    : null
 
   return (
     <>
@@ -516,7 +634,7 @@ export default function Dashboard() {
             transition={{ duration: 0.4, ease: EASE }}
             style={{ height: '100vh' }}
           >
-            <ActiveSession onEnd={() => setSessionActive(false)} />
+            <ActiveSession onEnd={() => setSessionActive(false)} credentials={credentials} />
           </motion.div>
         ) : (
           <motion.div
@@ -527,7 +645,12 @@ export default function Dashboard() {
             transition={{ duration: 0.4, ease: EASE }}
             style={{ height: '100vh' }}
           >
-            <Lobby user={user} profile={profile} onStart={() => setSessionActive(true)} />
+            <Lobby
+              user={user}
+              profile={profile}
+              onStart={() => setSessionActive(true)}
+              saveSocialCreds={saveSocialCreds}
+            />
           </motion.div>
         )}
       </AnimatePresence>

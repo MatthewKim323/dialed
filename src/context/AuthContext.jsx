@@ -97,6 +97,25 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  async function saveSocialCreds(platform, username, password) {
+    if (!user) return
+    const col_user = `${platform}_username`
+    const col_pass = `${platform}_password`
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(
+        { id: user.id, [col_user]: username, [col_pass]: password, updated_at: new Date().toISOString() },
+        { onConflict: 'id' },
+      )
+      .select()
+      .single()
+
+    if (error) throw error
+    setProfile(data)
+    return data
+  }
+
   const value = {
     user,
     profile,
@@ -106,6 +125,7 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signOut,
     saveProfile,
+    saveSocialCreds,
     fetchProfile,
   }
 
