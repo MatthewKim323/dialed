@@ -218,7 +218,7 @@ export default function Landing() {
 
         <footer className="footer">
           <span className="footer-logo">dialed.</span>
-          <span className="footer-meta">Nathan Doan &amp; Matthew Kim · March 2026 · Mental Health Track</span>
+          <span className="footer-meta">Nathan Kim &amp; Matthew Kim · March 2026 · Mental Health Track</span>
         </footer>
       </div>
     </>

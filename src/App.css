@@ -38,7 +38,7 @@ body {
 }
 
 .nl-header.is-scrolled {
-  padding: 1rem max(1.5rem, calc(50% - 340px)) 0;
+  padding: 1rem max(1.5rem, calc(50% - 460px)) 0;
 }
 
 .nl-nav {
@@ -67,7 +67,7 @@ body {
 
 .is-scrolled .nl-nav {
   height: 48px;
-  padding: 0 0.6rem 0 1.5rem;
+  padding: 0 1.5rem;
   border-radius: 100px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.10);
@@ -115,7 +115,6 @@ body {
 }
 
 .is-scrolled .nl-center {
-  flex: 0 0 auto;
   margin: 0 0.5rem;
 }
 
@@ -124,7 +123,7 @@ body {
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.04em;
-  color: var(--text-muted);
+  color: var(--text);
   text-decoration: none;
   padding: 0.42rem 0.85rem;
   border-radius: 100px;
@@ -148,7 +147,7 @@ body {
 }
 
 .is-scrolled .nl-right {
-  margin-left: 0;
+  margin-left: auto;
 }
 
 .nl-link {
@@ -156,7 +155,7 @@ body {
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.04em;
-  color: var(--text-muted);
+  color: var(--text);
   text-decoration: none;
   padding: 0.42rem 0.85rem;
   border-radius: 100px;
@@ -169,22 +168,6 @@ body {
   background: rgba(26, 40, 60, 0.05);
 }
 
-.nl-docs {
-  display: inline-block;
-  max-width: 80px;
-  overflow: hidden;
-  transition:
-    max-width 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity   0.3s ease,
-    padding   0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.is-scrolled .nl-docs {
-  max-width: 0;
-  opacity: 0;
-  padding-left: 0;
-  padding-right: 0;
-}
 
 /* Start Pipeline — prominent CTA */
 .nl-cta {
@@ -223,7 +206,7 @@ body {
 .nl-login {
   font-family: 'Bricolage Grotesque', sans-serif;
   font-size: 0.78rem;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--accent);
   text-decoration: none;
@@ -275,7 +258,7 @@ body {
   font-weight: 400;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--text-light);
+  color: var(--text);
   margin-bottom: 2rem;
 }
 
@@ -309,7 +292,7 @@ body {
 .hero-desc {
   font-size: 0.9rem;
   line-height: 1.85;
-  color: var(--text-muted);
+  color: var(--text);
   max-width: 450px;
   margin: 0 auto 2.75rem;
 }
@@ -336,7 +319,7 @@ body {
   font-size: 0.58rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--text-light);
+  color: var(--text-muted);
 }
 
 .scroll-line {
@@ -634,7 +617,7 @@ body {
 
 .cta-sub {
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: var(--text);
   max-width: 330px;
   margin: 0 auto 2.5rem;
   line-height: 1.8;
