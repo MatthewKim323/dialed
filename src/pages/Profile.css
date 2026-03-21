@@ -1,0 +1,246 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROFILE PAGE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pf-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10;
+}
+
+.pf-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.75rem 2.5rem;
+}
+
+.pf-logo {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 200;
+  font-size: 1.3rem;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.015em;
+  transition: opacity 0.2s;
+}
+
+.pf-logo:hover { opacity: 0.6; }
+
+.pf-back-link {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.4rem 0.9rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.35);
+  transition: all 0.2s;
+}
+
+.pf-back-link:hover {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text);
+}
+
+/* ── Main ────────────────────────────────────────────────────────────────── */
+.pf-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem 2rem 4rem;
+}
+
+.pf-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--glass-hi);
+  backdrop-filter: saturate(180%) blur(36px);
+  -webkit-backdrop-filter: saturate(180%) blur(36px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 2.25rem 2rem;
+  box-shadow:
+    0 8px 48px rgba(80, 130, 180, 0.14),
+    0 1px 0 var(--glass-inset) inset;
+}
+
+/* ── Account header ──────────────────────────────────────────────────────── */
+.pf-account {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pf-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.pf-account-info {
+  min-width: 0;
+}
+
+.pf-name {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1.25rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.pf-email {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.pf-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 1.5rem 0;
+}
+
+/* ── Section ─────────────────────────────────────────────────────────────── */
+.pf-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.pf-section-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pf-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.pf-edit:hover {
+  background: var(--accent-soft);
+}
+
+/* ── Fields ──────────────────────────────────────────────────────────────── */
+.pf-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pf-field-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.pf-field-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pf-chip {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 100px;
+  padding: 0.32rem 0.75rem;
+}
+
+.pf-field-empty {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.pf-field-url {
+  font-size: 0.8rem;
+  color: var(--accent);
+  word-break: break-all;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.pf-empty {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.pf-empty p {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+}
+
+.pf-setup-btn {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 400;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 100px;
+  padding: 0.75rem 1.8rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.pf-setup-btn:hover {
+  background: #1e5c94;
+  transform: translateY(-1px);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .pf-topbar { padding: 1.25rem 1.5rem; }
+  .pf-main   { padding: 1rem 1.25rem 3rem; }
+  .pf-card   { padding: 1.75rem 1.5rem; border-radius: 20px; }
+}

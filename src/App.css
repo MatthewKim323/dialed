@@ -234,16 +234,117 @@ body {
 
 .nl-login:hover { opacity: 0.65; }
 
-/* Account badge (logged in) */
-.nl-account {
+/* ── User menu (logged in) ────────────────────────────────────────────── */
+.nl-user-menu {
+  position: relative;
+}
+
+.nl-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.nl-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.nl-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 220px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  padding: 0.5rem 0;
+  box-shadow:
+    0 12px 48px rgba(80, 130, 180, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  z-index: 9999;
+  animation: nl-dropdown-in 0.18s ease-out;
+}
+
+@keyframes nl-dropdown-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.nl-dropdown-header {
+  padding: 0.6rem 0.85rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.nl-dropdown-name {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.nl-dropdown-email {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.nl-dropdown-sep {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 0.3rem 0.7rem;
+}
+
+.nl-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.52rem 0.85rem;
+  border: none;
+  background: none;
+  cursor: pointer;
   font-family: 'Bricolage Grotesque', sans-serif;
   font-size: 0.76rem;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
-  background: rgba(26, 40, 60, 0.07);
-  border-radius: 100px;
-  padding: 0.38rem 0.9rem;
-  white-space: nowrap;
+  letter-spacing: 0.02em;
+  transition: background 0.12s;
+  text-align: left;
+}
+
+.nl-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.nl-dropdown-item svg {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.nl-dropdown-item--danger {
+  color: #c0502a;
+}
+
+.nl-dropdown-item--danger svg {
+  opacity: 0.7;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
