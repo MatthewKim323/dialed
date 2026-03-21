@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 
 const LINKS = [
   { label: 'How it works', href: '#how-it-works' },
@@ -8,43 +7,10 @@ const LINKS = [
   { label: 'Letter',       href: '#letter'       },
 ]
 
-function NavContent({ pill = false, user = null }) {
-  const navigate = useNavigate()
-
-  return (
-    <>
-      <Link to="/" className={pill ? 'nl-logo nl-logo--pill' : 'nl-logo'}>
-        dialed.
-      </Link>
-
-      <ul className={pill ? 'nl-center nl-center--pill' : 'nl-center'}>
-        {LINKS.map(l => (
-          <li key={l.href}>
-            <a href={l.href}>{l.label}</a>
-          </li>
-        ))}
-      </ul>
-
-      <div className="nl-right">
-        {!pill && (
-          <a href="#" className="nl-link">Docs</a>
-        )}
-        <button className="nl-cta" onClick={() => navigate('/login')}>
-          Start Pipeline
-        </button>
-        <span className="nl-sep" aria-hidden />
-        {user
-          ? <span className="nl-account">{user}</span>
-          : <Link to="/login" className="nl-login">Login</Link>
-        }
-      </div>
-    </>
-  )
-}
-
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [user]    = useState(null)
+  const navigate  = useNavigate()
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 72)
@@ -53,38 +19,30 @@ export default function Nav() {
   }, [])
 
   return (
-    <>
-      <AnimatePresence>
-        {!scrolled && (
-          <motion.nav
-            key="bar"
-            className="nl-bar"
-            initial={{ opacity: 0, y: -22 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{    opacity: 0, y: -14 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <NavContent user={user} />
-          </motion.nav>
-        )}
-      </AnimatePresence>
+    <header className={`nl-header ${scrolled ? 'is-scrolled' : ''}`}>
+      <nav className="nl-nav">
+        <Link to="/" className="nl-logo">dialed.</Link>
 
-      <AnimatePresence>
-        {scrolled && (
-          <div className="nl-pill-rail">
-            <motion.nav
-              key="pill"
-              className="nl-pill"
-              initial={{ opacity: 0, y: -20, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0,   scale: 1    }}
-              exit={{    opacity: 0, y: -14,  scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-            >
-              <NavContent pill user={user} />
-            </motion.nav>
-          </div>
-        )}
-      </AnimatePresence>
-    </>
+        <ul className="nl-center">
+          {LINKS.map(l => (
+            <li key={l.href}>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="nl-right">
+          <a href="#" className="nl-link nl-docs">Docs</a>
+          <button className="nl-cta" onClick={() => navigate('/login')}>
+            Start Pipeline
+          </button>
+          <span className="nl-sep" aria-hidden />
+          {user
+            ? <span className="nl-account">{user}</span>
+            : <Link to="/login" className="nl-login">Login</Link>
+          }
+        </div>
+      </nav>
+    </header>
   )
 }
