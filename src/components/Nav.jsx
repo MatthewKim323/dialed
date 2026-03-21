@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const LINKS = [
@@ -7,16 +8,15 @@ const LINKS = [
   { label: 'Letter',       href: '#letter'       },
 ]
 
-// Shared content — rendered inside both bar and pill
 function NavContent({ pill = false, user = null }) {
+  const navigate = useNavigate()
+
   return (
     <>
-      {/* Logo */}
-      <a href="#" className={pill ? 'nl-logo nl-logo--pill' : 'nl-logo'}>
+      <Link to="/" className={pill ? 'nl-logo nl-logo--pill' : 'nl-logo'}>
         dialed.
-      </a>
+      </Link>
 
-      {/* Center links */}
       <ul className={pill ? 'nl-center nl-center--pill' : 'nl-center'}>
         {LINKS.map(l => (
           <li key={l.href}>
@@ -25,16 +25,17 @@ function NavContent({ pill = false, user = null }) {
         ))}
       </ul>
 
-      {/* Right actions */}
       <div className="nl-right">
         {!pill && (
           <a href="#" className="nl-link">Docs</a>
         )}
-        <button className="nl-cta">Start Pipeline</button>
+        <button className="nl-cta" onClick={() => navigate('/login')}>
+          Start Pipeline
+        </button>
         <span className="nl-sep" aria-hidden />
         {user
           ? <span className="nl-account">{user}</span>
-          : <a href="#" className="nl-login">Login</a>
+          : <Link to="/login" className="nl-login">Login</Link>
         }
       </div>
     </>
@@ -43,7 +44,7 @@ function NavContent({ pill = false, user = null }) {
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
-  const [user]    = useState(null) // swap with real auth
+  const [user]    = useState(null)
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 72)
@@ -53,7 +54,6 @@ export default function Nav() {
 
   return (
     <>
-      {/* ── Full-width bar ── */}
       <AnimatePresence>
         {!scrolled && (
           <motion.nav
@@ -69,7 +69,6 @@ export default function Nav() {
         )}
       </AnimatePresence>
 
-      {/* ── Floating pill ── */}
       <AnimatePresence>
         {scrolled && (
           <div className="nl-pill-rail">
