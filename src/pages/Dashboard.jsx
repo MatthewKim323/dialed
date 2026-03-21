@@ -22,7 +22,7 @@ const MOCK_TICKER = [
   { delay: 15500, from: 'Classifier', to: 'Boss',         msg: 'BRAIN ROT — clickbait + engagement bait — conf: 0.87',                                   type: 'alert' },
   { delay: 16500, from: 'Context',    to: 'Boss',         msg: 'State: NORMAL — concur with verdict — no intervention fatigue',                           type: 'context' },
   { delay: 17500, from: 'Boss',       to: 'Strategist',   msg: 'Confirmed brain rot — requesting intervention strategy',                                 type: 'verdict' },
-  { delay: 19000, from: 'Strategist', to: 'Intervention', msg: 'WARNING OVERLAY — "This content uses clickbait tactics"',                                type: 'intervention' },
+  { delay: 19000, from: 'Strategist', to: 'System',       msg: 'WARNING OVERLAY — "This content uses clickbait tactics"',                                type: 'intervention' },
   { delay: 20500, from: 'Synthesis',  to: 'Letter',       msg: 'Appending — tactic: curiosity gap — hook: manufactured suspense',                         type: 'synthesis' },
   { delay: 24000, from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #3 — @chef.marco — "3-ingredient pasta" — 28.1K likes',                   type: 'payload' },
   { delay: 26000, from: 'Classifier', to: 'Boss',         msg: 'CLEAR — cooking content — no manipulation — conf: 0.11',                                 type: 'clear' },
@@ -30,7 +30,7 @@ const MOCK_TICKER = [
   { delay: 32000, from: 'Boss',       to: 'Classifier',   msg: 'Dispatching — flagged: outrage pattern, generational targeting',                          type: 'dispatch' },
   { delay: 33500, from: 'Classifier', to: 'Boss',         msg: 'BRAIN ROT — rage bait + outrage amplification — conf: 0.94',                             type: 'alert' },
   { delay: 35000, from: 'Context',    to: 'Boss',         msg: 'ESCALATING → ELEVATED — 2 detections in 5 items — threshold now 0.50',                    type: 'escalate' },
-  { delay: 37000, from: 'Strategist', to: 'Intervention', msg: 'FULL OVERLAY — severity: HIGH — "Rage bait detected."',                                  type: 'intervention' },
+  { delay: 37000, from: 'Strategist', to: 'System',       msg: 'FULL OVERLAY — severity: HIGH — "Rage bait detected."',                                  type: 'intervention' },
   { delay: 38500, from: 'Synthesis',  to: 'Letter',       msg: 'Appending — tactic: outrage amplification — intended emotion: moral indignation',          type: 'synthesis' },
 ]
 
@@ -54,6 +54,14 @@ const PROFILE_LABELS = {
   moderate: 'Moderate overlays',
   aggressive: 'Hard redirects',
   '15': '15 min', '30': '30 min', '60': '1 hr', none: 'No limit',
+}
+
+const AGENT_META = {
+  boss:       { icon: '⚡', color: '#4a6fa5', label: 'Boss Agent',     role: 'Dispatch & Coordination' },
+  classifier: { icon: '🔬', color: '#C0502A', label: 'Classifier',     role: 'Brain Rot Detection' },
+  context:    { icon: '🧭', color: '#7c4dbd', label: 'Context Agent',  role: 'Session State Machine' },
+  strategist: { icon: '🎯', color: '#9a6f15', label: 'Strategist',     role: 'Intervention Planning' },
+  synthesis:  { icon: '✍️', color: '#1e8449', label: 'Synthesis Agent', role: 'Letter & Narration' },
 }
 
 function formatTime(seconds) {
@@ -161,7 +169,6 @@ function Lobby({ user, profile, onStart, saveSocialCreds }) {
             </div>
           )}
 
-          {/* ── Social account section ─────────────────────────────── */}
           <div className="lobby-social">
             <div className="lobby-social-header">
               <svg className="lobby-ig-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -180,84 +187,125 @@ function Lobby({ user, profile, onStart, saveSocialCreds }) {
 
             {showCredForm ? (
               <div className="lobby-cred-form">
-                <input
-                  className="lobby-cred-input"
-                  type="text"
-                  placeholder="Username"
-                  value={igUser}
-                  onChange={e => setIgUser(e.target.value)}
-                  autoComplete="username"
-                />
-                <input
-                  className="lobby-cred-input"
-                  type="password"
-                  placeholder="Password"
-                  value={igPass}
-                  onChange={e => setIgPass(e.target.value)}
-                  autoComplete="current-password"
-                />
+                <input className="lobby-cred-input" type="text" placeholder="Username" value={igUser} onChange={e => setIgUser(e.target.value)} autoComplete="username" />
+                <input className="lobby-cred-input" type="password" placeholder="Password" value={igPass} onChange={e => setIgPass(e.target.value)} autoComplete="current-password" />
                 {credError && <p className="lobby-cred-error">{credError}</p>}
                 <div className="lobby-cred-actions">
-                  <button
-                    className="lobby-cred-save"
-                    onClick={handleSaveCreds}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
+                  <button className="lobby-cred-save" onClick={handleSaveCreds} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
                   {hasSavedCreds && (
-                    <button className="lobby-cred-cancel" onClick={() => setShowCredForm(false)}>
-                      Cancel
-                    </button>
+                    <button className="lobby-cred-cancel" onClick={() => setShowCredForm(false)}>Cancel</button>
                   )}
                 </div>
-                <p className="lobby-cred-note">
-                  Credentials are used only by your browser agents to access your feed. Never shared.
-                </p>
+                <p className="lobby-cred-note">Credentials are used only by your browser agents to access your feed. Never shared.</p>
               </div>
             ) : (
               <div className="lobby-cred-saved">
                 <span className="lobby-cred-saved-user">@{profile?.ig_username}</span>
-                <button className="lobby-cred-edit" onClick={() => { setShowCredForm(true); setIgPass('') }}>
-                  Edit
-                </button>
+                <button className="lobby-cred-edit" onClick={() => { setShowCredForm(true); setIgPass('') }}>Edit</button>
               </div>
             )}
           </div>
 
-          <button
-            className={`lobby-start ${!canStart ? 'lobby-start--disabled' : ''}`}
-            onClick={canStart ? onStart : undefined}
-            disabled={!canStart}
-          >
+          <button className={`lobby-start ${!canStart ? 'lobby-start--disabled' : ''}`} onClick={canStart ? onStart : undefined} disabled={!canStart}>
             <span className="lobby-start-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </span>
             Start Pipeline
           </button>
 
-          {!canStart && (
-            <p className="lobby-hint">Connect your Instagram account above to start the pipeline.</p>
-          )}
-          {canStart && (
-            <p className="lobby-hint">Your agents will log into your Instagram and begin monitoring your feed in real time.</p>
-          )}
+          {!canStart && <p className="lobby-hint">Connect your Instagram account above to start the pipeline.</p>}
+          {canStart && <p className="lobby-hint">Your agents will log into your Instagram and begin monitoring your feed in real time.</p>}
         </motion.div>
 
         {!profile && (
-          <motion.p
-            className="lobby-no-profile"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
+          <motion.p className="lobby-no-profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
             No intent profile yet.{' '}
-            <button className="lobby-setup-link" onClick={() => navigate('/onboarding')}>
-              Set one up
-            </button>{' '}
+            <button className="lobby-setup-link" onClick={() => navigate('/onboarding')}>Set one up</button>{' '}
             for better results.
           </motion.p>
         )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AGENT CARD
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function AgentCard({ agentId, isActive }) {
+  const meta = AGENT_META[agentId]
+  if (!meta) return null
+
+  return (
+    <div className={`ac ${isActive ? 'ac--active' : ''}`}>
+      <div className="ac-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
+        {meta.icon}
+      </div>
+      <div className="ac-info">
+        <span className="ac-name">{meta.label}</span>
+        <span className="ac-role">{meta.role}</span>
+      </div>
+      <div className={`ac-dot ${isActive ? 'ac-dot--on' : ''}`} />
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   USER CHAT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function UserChat({ chatMessages, onSend }) {
+  const [input, setInput] = useState('')
+  const chatEndRef = useRef(null)
+  const [sending, setSending] = useState(false)
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages])
+
+  const handleSend = async () => {
+    const msg = input.trim()
+    if (!msg || sending) return
+    setInput('')
+    setSending(true)
+    await onSend(msg)
+    setSending(false)
+  }
+
+  return (
+    <div className="uc">
+      <div className="uc-messages">
+        {chatMessages.length === 0 && (
+          <div className="uc-empty">
+            <p>Talk to your agents</p>
+            <span>"Go more aggressive" · "Why did you flag that?" · "How much time saved?"</span>
+          </div>
+        )}
+        {chatMessages.map((m, i) => (
+          <div key={i} className={`uc-bubble ${m.role === 'user' ? 'uc-bubble--user' : 'uc-bubble--agent'}`}>
+            {m.role === 'agent' && (
+              <div className="uc-bubble-agent-label" style={{ color: AGENT_META[m.agent_id]?.color }}>
+                {AGENT_META[m.agent_id]?.icon} {m.agent_name}
+              </div>
+            )}
+            <p>{m.message}</p>
+          </div>
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+      <div className="uc-input-row">
+        <input
+          className="uc-input"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          placeholder="Talk to your agents..."
+          disabled={sending}
+        />
+        <button className="uc-send" onClick={handleSend} disabled={sending || !input.trim()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </div>
     </div>
   )
@@ -279,9 +327,14 @@ function ActiveSession({ onEnd, credentials }) {
   const [sessionState, setSessionState] = useState('NORMAL')
 
   const [backendConnected, setBackendConnected] = useState(false)
-  const [scoutUrl, setScoutUrl] = useState(null)
-  const [interventionUrl, setInterventionUrl] = useState(null)
+  const [liveUrl, setLiveUrl] = useState(null)
   const [connecting, setConnecting] = useState(true)
+  const [needs2FA, setNeeds2FA] = useState(false)
+  const [tfaCode, setTfaCode] = useState('')
+  const [tfaSubmitting, setTfaSubmitting] = useState(false)
+
+  const [activeAgents, setActiveAgents] = useState(new Set())
+  const [chatMessages, setChatMessages] = useState([])
 
   // Session timer
   useEffect(() => {
@@ -289,7 +342,7 @@ function ActiveSession({ onEnd, credentials }) {
     return () => clearInterval(iv)
   }, [])
 
-  // Try to connect to backend with credentials
+  // Start session
   useEffect(() => {
     let cancelled = false
 
@@ -307,8 +360,7 @@ function ActiveSession({ onEnd, credentials }) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         if (cancelled) return
-        setScoutUrl(data.scout_live_url)
-        setInterventionUrl(data.intervention_live_url)
+        setLiveUrl(data.live_url)
         setBackendConnected(true)
       } catch {
         // Backend not available — mock fallback
@@ -321,11 +373,13 @@ function ActiveSession({ onEnd, credentials }) {
 
     return () => {
       cancelled = true
-      fetch(`${API_URL}/api/session/stop`, { method: 'POST' }).catch(() => {})
+      setTimeout(() => {
+        fetch(`${API_URL}/api/session/stop`, { method: 'POST' }).catch(() => {})
+      }, 500)
     }
   }, [])
 
-  // WebSocket for real-time updates
+  // WebSocket
   useEffect(() => {
     if (!backendConnected) return
 
@@ -337,27 +391,32 @@ function ActiveSession({ onEnd, credentials }) {
 
       if (data.type === 'ticker') {
         setMessages(prev => [...prev, {
-          from: data.from,
-          to: data.to,
-          msg: data.msg,
-          type: data.msg_type,
+          from: data.from, to: data.to, msg: data.msg, type: data.msg_type,
         }])
-
         if (data.msg_type === 'payload') setStats(s => ({ ...s, scanned: s.scanned + 1 }))
         if (data.msg_type === 'alert')   setStats(s => ({ ...s, detected: s.detected + 1 }))
         if (data.msg_type === 'intervention') {
-          setStats(s => ({
-            ...s,
-            interventions: s.interventions + 1,
-            reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15,
-          }))
+          setStats(s => ({ ...s, interventions: s.interventions + 1, reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15 }))
         }
         if (data.msg_type === 'escalate') setSessionState('ELEVATED')
         if (data.msg_type === 'synthesis') setLetterStarted(true)
       }
 
+      if (data.type === '2fa_required') setNeeds2FA(true)
+      if (data.type === '2fa_resolved') setNeeds2FA(false)
       if (data.type === 'stats') setStats(data)
       if (data.type === 'session_ended') setBackendConnected(false)
+      if (data.type === 'state_change') setSessionState(data.state)
+      if (data.type === 'agent_status') {
+        setActiveAgents(prev => {
+          const next = new Set(prev)
+          data.active ? next.add(data.agent_id) : next.delete(data.agent_id)
+          return next
+        })
+      }
+      if (data.type === 'chat') {
+        setChatMessages(prev => [...prev, data])
+      }
     }
 
     ws.onclose = () => wsRef.current = null
@@ -367,18 +426,13 @@ function ActiveSession({ onEnd, credentials }) {
   // Mock data fallback
   useEffect(() => {
     if (backendConnected || connecting) return
-
     const timeouts = MOCK_TICKER.map(entry =>
       setTimeout(() => {
         setMessages(prev => [...prev, entry])
         if (entry.type === 'payload') setStats(s => ({ ...s, scanned: s.scanned + 1 }))
         if (entry.type === 'alert')   setStats(s => ({ ...s, detected: s.detected + 1 }))
         if (entry.type === 'intervention') {
-          setStats(s => ({
-            ...s,
-            interventions: s.interventions + 1,
-            reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15,
-          }))
+          setStats(s => ({ ...s, interventions: s.interventions + 1, reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15 }))
         }
         if (entry.type === 'escalate') setSessionState('ELEVATED')
         if (entry.type === 'synthesis' && !letterStarted) setLetterStarted(true)
@@ -405,10 +459,33 @@ function ActiveSession({ onEnd, credentials }) {
   }, [messages])
 
   const handleEnd = () => {
-    if (backendConnected) {
-      fetch(`${API_URL}/api/session/stop`, { method: 'POST' }).catch(() => {})
-    }
+    if (backendConnected) fetch(`${API_URL}/api/session/stop`, { method: 'POST' }).catch(() => {})
     onEnd()
+  }
+
+  const handle2FASubmit = async () => {
+    if (!tfaCode.trim() || tfaSubmitting) return
+    setTfaSubmitting(true)
+    try {
+      await fetch(`${API_URL}/api/session/2fa-complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: tfaCode.trim() }),
+      })
+      setNeeds2FA(false)
+      setTfaCode('')
+    } catch { /* ignore */ }
+    setTfaSubmitting(false)
+  }
+
+  const handleChatSend = async (msg) => {
+    try {
+      await fetch(`${API_URL}/api/session/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg }),
+      })
+    } catch { /* ignore */ }
   }
 
   const stateStyle = STATE_COLORS[sessionState]
@@ -416,50 +493,36 @@ function ActiveSession({ onEnd, credentials }) {
   return (
     <div className="dash">
       {/* Nav */}
-      <motion.nav
-        className="dash-nav"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: EASE }}
-      >
+      <motion.nav className="dash-nav" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }}>
         <Link to="/" className="dash-logo">dialed.</Link>
-
         <div className="dash-nav-center">
-          <div className="dash-timer">
-            <span className="dash-timer-dot" />
-            {formatTime(sessionTime)}
-          </div>
-          <div
-            className="dash-state"
-            style={{ background: stateStyle.bg, color: stateStyle.color, borderColor: stateStyle.border }}
-          >
-            {sessionState}
-          </div>
+          <div className="dash-timer"><span className="dash-timer-dot" />{formatTime(sessionTime)}</div>
+          <div className="dash-state" style={{ background: stateStyle.bg, color: stateStyle.color, borderColor: stateStyle.border }}>{sessionState}</div>
           {backendConnected && <span className="dash-live-badge">LIVE</span>}
         </div>
-
         <div className="dash-nav-right">
           <button className="dash-end" onClick={handleEnd}>End Session</button>
         </div>
       </motion.nav>
 
-      {/* Main grid */}
+      {/* Trifold grid */}
       <div className="dash-grid">
-        {/* Left: Scout Stream */}
+
+        {/* ── Left: Live Feed (40%) ─────────────────────────────────── */}
         <motion.div
-          className="dash-panel dash-stream"
+          className="dash-panel dash-feed"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
         >
           <div className="dash-panel-header">
             <span className="dash-panel-dot dash-panel-dot--blue" />
-            <span className="dash-panel-title">Scout Agent</span>
-            <span className="dash-panel-status">{scoutUrl ? 'Streaming' : 'Standby'}</span>
+            <span className="dash-panel-title">Live Feed</span>
+            <span className="dash-panel-status">{liveUrl ? 'Streaming' : 'Standby'}</span>
           </div>
-          <div className="dash-stream-body">
-            {scoutUrl ? (
-              <iframe src={scoutUrl} className="dash-stream-iframe" title="Scout Agent Stream" allow="autoplay" />
+          <div className="dash-feed-body">
+            {liveUrl ? (
+              <iframe src={liveUrl} className="dash-feed-iframe" title="Dialed Agent — Live Feed" allow="autoplay" />
             ) : (
               <div className="dash-stream-placeholder">
                 <div className="dash-stream-icon">
@@ -472,10 +535,43 @@ function ActiveSession({ onEnd, credentials }) {
                 <div className="dash-stream-scan"><div className="dash-scan-line" /></div>
               </div>
             )}
+
+            {/* 2FA overlay with code input */}
+            {needs2FA && (
+              <div className="dash-2fa-overlay">
+                <div className="dash-2fa-card">
+                  <div className="dash-2fa-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                  </div>
+                  <p className="dash-2fa-title">Verification needed</p>
+                  <p className="dash-2fa-desc">Enter the security code sent to your email or phone. The agent will input it for you.</p>
+                  <input
+                    className="dash-2fa-input"
+                    type="text"
+                    placeholder="Enter code"
+                    value={tfaCode}
+                    onChange={e => setTfaCode(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handle2FASubmit()}
+                    autoFocus
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                  />
+                  <button
+                    className="dash-2fa-btn"
+                    onClick={handle2FASubmit}
+                    disabled={!tfaCode.trim() || tfaSubmitting}
+                  >
+                    {tfaSubmitting ? 'Submitting...' : 'Submit Code'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 
-        {/* Center: Ticker + Letter */}
+        {/* ── Center: Agent Comms + Letter (30%) ────────────────────── */}
         <div className="dash-center">
           <motion.div
             className="dash-panel dash-ticker"
@@ -540,33 +636,34 @@ function ActiveSession({ onEnd, credentials }) {
           </motion.div>
         </div>
 
-        {/* Right: Intervention Stream */}
+        {/* ── Right: Command Center (30%) ───────────────────────────── */}
         <motion.div
-          className="dash-panel dash-stream"
+          className="dash-right"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
         >
-          <div className="dash-panel-header">
-            <span className="dash-panel-dot dash-panel-dot--red" />
-            <span className="dash-panel-title">Intervention Agent</span>
-            <span className="dash-panel-status">{interventionUrl ? 'Active' : 'Standing by'}</span>
+          {/* Agent cards */}
+          <div className="dash-panel dash-agents">
+            <div className="dash-panel-header">
+              <span className="dash-panel-dot dash-panel-dot--blue" />
+              <span className="dash-panel-title">Agent Swarm</span>
+              <span className="dash-panel-status">{activeAgents.size} active</span>
+            </div>
+            <div className="dash-agents-list">
+              {Object.keys(AGENT_META).map(id => (
+                <AgentCard key={id} agentId={id} isActive={activeAgents.has(id)} />
+              ))}
+            </div>
           </div>
-          <div className="dash-stream-body">
-            {interventionUrl ? (
-              <iframe src={interventionUrl} className="dash-stream-iframe" title="Intervention Agent Stream" allow="autoplay" />
-            ) : (
-              <div className="dash-stream-placeholder">
-                <div className="dash-stream-icon">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                </div>
-                <p className="dash-stream-label">Defense active</p>
-                <span className="dash-stream-sub">Awaiting intervention orders</span>
-                <div className="dash-stream-pulse"><span /><span /><span /></div>
-              </div>
-            )}
+
+          {/* User chat */}
+          <div className="dash-panel dash-chat">
+            <div className="dash-panel-header">
+              <span className="dash-panel-dot dash-panel-dot--green" />
+              <span className="dash-panel-title">Command Center</span>
+            </div>
+            <UserChat chatMessages={chatMessages} onSend={handleChatSend} />
           </div>
         </motion.div>
       </div>
@@ -626,31 +723,12 @@ export default function Dashboard() {
       <CloudBackground />
       <AnimatePresence mode="wait">
         {sessionActive ? (
-          <motion.div
-            key="session"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: EASE }}
-            style={{ height: '100vh' }}
-          >
+          <motion.div key="session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease: EASE }} style={{ height: '100vh' }}>
             <ActiveSession onEnd={() => setSessionActive(false)} credentials={credentials} />
           </motion.div>
         ) : (
-          <motion.div
-            key="lobby"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: EASE }}
-            style={{ height: '100vh' }}
-          >
-            <Lobby
-              user={user}
-              profile={profile}
-              onStart={() => setSessionActive(true)}
-              saveSocialCreds={saveSocialCreds}
-            />
+          <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease: EASE }} style={{ height: '100vh' }}>
+            <Lobby user={user} profile={profile} onStart={() => setSessionActive(true)} saveSocialCreds={saveSocialCreds} />
           </motion.div>
         )}
       </AnimatePresence>
