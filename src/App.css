@@ -1208,6 +1208,301 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Dashboard preview ──────────────────────────────────────────────────── */
+.dashboard-preview {
+  padding: 6rem 3rem 9rem;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.dash-tri {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 3.5rem;
+}
+
+.dash-panel {
+  flex: 1;
+  padding: 1.5rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dash-panel--feed { flex: 1.3; }
+
+.dash-panel-label {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dash-panel-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.dash-mock-row {
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(26, 40, 60, 0.06);
+}
+
+.dash-mock-row--flagged {
+  background: rgba(192, 80, 42, 0.1);
+  border: 1px solid rgba(192, 80, 42, 0.2);
+  animation: flagPulse 3s ease-in-out infinite;
+}
+
+.dash-mock-line {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(26, 40, 60, 0.08);
+}
+
+.dash-mock-line--short { width: 60%; }
+
+.dash-mock-line--italic {
+  background: rgba(46, 110, 168, 0.1);
+}
+
+.dash-mock-sep {
+  height: 1px;
+  background: rgba(26, 40, 60, 0.06);
+  margin: 0.3rem 0;
+}
+
+.dash-mock-avatar-row {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.3rem;
+}
+
+.dash-mock-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.5rem;
+  font-weight: 500;
+}
+
+.dash-mock-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dash-mock-bubble {
+  height: 14px;
+  border-radius: 8px;
+}
+
+.dash-mock-bubble--user {
+  width: 55%;
+  background: rgba(26, 40, 60, 0.08);
+  align-self: flex-end;
+}
+
+.dash-mock-bubble--agent {
+  width: 70%;
+  background: rgba(46, 110, 168, 0.1);
+  align-self: flex-start;
+}
+
+.dash-panel-desc {
+  font-size: 0.68rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* ── Voice layer ───────────────────────────────────────────────────────── */
+.voice-layer {
+  padding: 6rem 3rem 9rem;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.voice-intro {
+  font-size: 0.88rem;
+  line-height: 1.85;
+  color: var(--text);
+  max-width: 640px;
+  margin-top: 1.25rem;
+}
+
+.voice-agents {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 3rem;
+}
+
+.voice-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1.75rem 1rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  text-align: center;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.voice-card:hover {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.voice-card:hover .voice-bar {
+  animation-play-state: running;
+}
+
+.voice-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--text);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+
+.voice-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: voiceWave 1.2s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+@keyframes voiceWave {
+  0%, 100% { height: 4px; }
+  50%      { height: 16px; }
+}
+
+.voice-name {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.voice-tone {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* ── Command center ────────────────────────────────────────────────────── */
+.command-center {
+  padding: 6rem 3rem 9rem;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.cmd-intro {
+  font-size: 0.88rem;
+  line-height: 1.85;
+  color: var(--text);
+  max-width: 560px;
+  margin-top: 1.25rem;
+}
+
+.cmd-chat-demo {
+  max-width: 600px;
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.cmd-bubble {
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  max-width: 85%;
+}
+
+.cmd-bubble--user {
+  align-self: flex-end;
+  background: var(--text);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.cmd-bubble--agent {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.cmd-agent {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.cmd-input-mock {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.72rem;
+  color: var(--text-light);
+  letter-spacing: 0.02em;
+}
+
 /* ── Final CTA ──────────────────────────────────────────────────────────── */
 .cta-section {
   padding: 7rem 3rem 9rem;
@@ -1271,6 +1566,12 @@ body {
   .journey           { padding: 4rem 1.5rem 6rem; }
   .journey-layout    { flex-direction: column; gap: 2.5rem; }
   .journey-visual    { flex: none; width: 100%; }
+  .dashboard-preview { padding: 4rem 1.5rem 6rem; }
+  .dash-tri          { flex-direction: column; }
+  .voice-layer       { padding: 4rem 1.5rem 6rem; }
+  .voice-agents      { flex-wrap: wrap; gap: 1rem; }
+  .voice-card        { flex: 1 1 calc(50% - 0.5rem); min-width: 140px; }
+  .command-center    { padding: 4rem 1.5rem 6rem; }
   .cta-section       { padding: 5rem 1.5rem 6rem; }
   .footer            { flex-direction: column; gap: 0.5rem; text-align: center; }
 }
