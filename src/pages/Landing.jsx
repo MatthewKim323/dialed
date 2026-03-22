@@ -99,8 +99,8 @@ const FEATURES = [
   {
     num: '01',
     title: 'Scout',
-    desc: 'An autonomous browser agent logs into your account, navigates your live feed, and captures every piece of content as a structured payload — screenshot, metadata, and engagement signals.',
-    detail: 'browser-use · headless Chromium · 2–4 fps stream',
+    desc: 'An autonomous browser agent logs into your account, navigates your live feed, and extracts every piece of content as a structured payload — captions, creator handles, engagement metrics, and visual descriptions.',
+    detail: 'browser-use Cloud · live_url iframe · Pydantic structured output',
   },
   {
     num: '02',
@@ -487,6 +487,36 @@ export default function Landing() {
                 </div>
               </Reveal>
             ))}
+          </div>
+        </section>
+
+        <section className="confession">
+          <div className="confession-layout">
+            <div className="confession-text">
+              <Reveal>
+                <p className="section-label">Summary</p>
+                <h2 className="section-heading">
+                  The confession.
+                </h2>
+              </Reveal>
+
+              <Reveal delay={0.1}>
+                <p className="confession-intro">
+                  After each session, Dialed generates a plain-language summary of everything it caught and every action it took — so you know exactly what happened while you were scrolling.
+                </p>
+              </Reveal>
+            </div>
+
+            <Reveal delay={0.15}>
+              <div className="confession-quote">
+                <blockquote>
+                  "Session lasted 14 minutes. 23 Reels scanned. 9 pieces of brain rot detected — 4 rage bait, 3 outrage amplification, 2 parasocial traps. 6 interventions fired: 3 warning overlays, 2 content replacements, 1 hard redirect. Creators @drama_daily_tea and @viral.rage.clips flagged multiple times. 4 minutes and 12 seconds of attention reclaimed. Session state reached Elevated at the 8-minute mark."
+                </blockquote>
+                <cite className="confession-cite">
+                  — Session report generated automatically by the Synthesis agent
+                </cite>
+              </div>
+            </Reveal>
           </div>
         </section>
 

@@ -541,17 +541,18 @@ body {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.52);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(26, 40, 60, 0.15);
   padding: 0.85rem 2rem;
   border-radius: 100px;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(26, 40, 60, 0.25);
   transform: translateY(-2px);
 }
 
@@ -1428,6 +1429,62 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Confession ─────────────────────────────────────────────────────────── */
+.confession {
+  padding: 6rem 3rem 9rem;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.confession-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 4rem;
+}
+
+.confession-text {
+  flex: 0 0 340px;
+}
+
+.confession-intro {
+  font-size: 0.88rem;
+  line-height: 1.85;
+  color: var(--text);
+  margin-top: 1.25rem;
+}
+
+.confession-quote {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.confession-quote blockquote {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 300;
+  line-height: 1.9;
+  color: var(--text);
+  quotes: none;
+  margin: 0;
+}
+
+.confession-cite {
+  display: block;
+  margin-top: 1.5rem;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 /* ── Command center ────────────────────────────────────────────────────── */
 .command-center {
   padding: 6rem 3rem 9rem;
@@ -1579,6 +1636,9 @@ body {
   .voice-layer       { padding: 4rem 1.5rem 6rem; }
   .voice-agents      { flex-wrap: wrap; gap: 1rem; }
   .voice-card        { flex: 1 1 calc(50% - 0.5rem); min-width: 140px; }
+  .confession        { padding: 4rem 1.5rem 6rem; }
+  .confession-layout { flex-direction: column; gap: 2.5rem; }
+  .confession-text   { flex: none; }
   .command-center    { padding: 4rem 1.5rem 6rem; }
   .cmd-layout        { flex-direction: column; gap: 2.5rem; }
   .cmd-text          { flex: none; position: static; }
