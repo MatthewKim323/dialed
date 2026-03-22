@@ -106,11 +106,11 @@
   background: rgba(192, 80, 42, 0.06);
 }
 
-/* ── Main grid — trifold: left 40%, center 30%, right 30% ────────────── */
+/* ── Main grid — trifold: left ~30%, center ~35%, right ~35% ─────────── */
 .dash-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr;
+  grid-template-columns: 1.3fr 1.3fr 1.3fr;
   gap: 10px;
   padding: 10px;
   min-height: 0;
@@ -206,12 +206,10 @@
 
 .dash-feed-iframe {
   position: absolute;
-  top: -4%;
-  left: 50%;
-  transform: translateX(-50%) scale(1.08);
-  transform-origin: top center;
+  top: -15%;
+  left: 0;
   width: 100%;
-  height: 108%;
+  height: 130%;
   border: none;
   display: block;
   pointer-events: none;
@@ -586,7 +584,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.82rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-family: 'Fraunces', serif;
   flex-shrink: 0;
 }
 

@@ -57,11 +57,11 @@ const PROFILE_LABELS = {
 }
 
 const AGENT_META = {
-  boss:       { icon: '⚡', color: '#4a6fa5', label: 'Boss Agent',     role: 'Dispatch & Coordination' },
-  classifier: { icon: '🔬', color: '#C0502A', label: 'Classifier',     role: 'Brain Rot Detection' },
-  context:    { icon: '🧭', color: '#7c4dbd', label: 'Context Agent',  role: 'Session State Machine' },
-  strategist: { icon: '🎯', color: '#9a6f15', label: 'Strategist',     role: 'Intervention Planning' },
-  synthesis:  { icon: '✍️', color: '#1e8449', label: 'Synthesis Agent', role: 'Letter & Narration' },
+  boss:       { icon: 'B', color: '#4a6fa5', label: 'Boss Agent',     role: 'Dispatch & Coordination' },
+  classifier: { icon: 'C', color: '#C0502A', label: 'Classifier',     role: 'Brain Rot Detection' },
+  context:    { icon: 'X', color: '#7c4dbd', label: 'Context Agent',  role: 'Session State Machine' },
+  strategist: { icon: 'S', color: '#9a6f15', label: 'Strategist',     role: 'Intervention Planning' },
+  synthesis:  { icon: 'A', color: '#1e8449', label: 'Synthesis Agent', role: 'Letter & Narration' },
 }
 
 function formatTime(seconds) {
