@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useInView } from 'framer-motion'
 import CloudBackground from '../components/CloudBackground'
 import Nav from '../components/Nav'
 
 const EASE_OUT = [0.22, 1, 0.36, 1]
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function Reveal({ children, delay = 0, className, style }) {
   const ref = useRef(null)
@@ -170,6 +171,113 @@ function AgentFeed({ messages }) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+const VOICE_AGENTS = [
+  {
+    id: 'boss',
+    initial: 'B',
+    name: 'Boss',
+    color: '#4a6fa5',
+    tone: 'Authoritative · steady cadence',
+    intro: "I'm the Boss Agent — I coordinate the entire swarm. When content enters the pipeline, I dispatch it to the Classifier and Context agents simultaneously, aggregate their verdicts, and decide the final call. Every decision goes through me.",
+  },
+  {
+    id: 'classifier',
+    initial: 'C',
+    name: 'Classifier',
+    color: '#C0502A',
+    tone: 'Clinical · flat affect',
+    intro: "I'm the Classifier. I analyze every piece of content for manipulation tactics — rage bait, FOMO hooks, social comparison traps, outrage amplification. I score each one with a confidence rating and flag what's designed to hijack your attention.",
+  },
+  {
+    id: 'context',
+    initial: 'X',
+    name: 'Context',
+    color: '#7c4dbd',
+    tone: 'Cautious · measured pace',
+    intro: "I'm the Context Agent. I track your session state — how much brain rot you've been exposed to, how fatigued your attention is, and whether we need to escalate. I adjust the detection threshold in real time based on what I'm seeing.",
+  },
+  {
+    id: 'strategist',
+    initial: 'S',
+    name: 'Strategist',
+    color: '#9a6f15',
+    tone: 'Decisive · crisp delivery',
+    intro: "I'm the Strategist. When brain rot is confirmed, I decide exactly what to do about it — warning overlay, content block, or a full account ban. The severity depends on the confidence score and the session state. I don't hesitate.",
+  },
+  {
+    id: 'synthesis',
+    initial: 'A',
+    name: 'Synthesis',
+    color: '#1e8449',
+    tone: 'Reflective · calm delivery',
+    intro: "I'm the Synthesis Agent. When your session ends, I generate the full report — every tactic caught, every intervention fired, every second of attention reclaimed. I give you the complete picture of what the algorithm tried and what your agents stopped.",
+  },
+]
+
+function VoiceAgents() {
+  const [playingId, setPlayingId] = useState(null)
+  const audioRef = useRef(null)
+
+  const handlePlay = useCallback(async (agent) => {
+    if (playingId === agent.id) {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      setPlayingId(null)
+      return
+    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setPlayingId(agent.id)
+
+    try {
+      const resp = await fetch(`${API_URL}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_id: agent.id, text: agent.intro }),
+      })
+      if (!resp.ok) { setPlayingId(null); return }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onended = () => { setPlayingId(null); audioRef.current = null; URL.revokeObjectURL(url) }
+      audio.onerror = () => { setPlayingId(null); audioRef.current = null }
+      await audio.play()
+    } catch {
+      setPlayingId(null)
+    }
+  }, [playingId])
+
+  useEffect(() => {
+    return () => { if (audioRef.current) audioRef.current.pause() }
+  }, [])
+
+  return (
+    <div className="voice-agents">
+      {VOICE_AGENTS.map((a, i) => (
+        <Reveal key={a.name} delay={i * 0.08}>
+          <div
+            className={`voice-card ${playingId === a.id ? 'voice-card--playing' : ''}`}
+            onClick={() => handlePlay(a)}
+            style={{ cursor: 'pointer', '--agent-color': a.color }}
+          >
+            <span className="voice-avatar" style={{ background: `${a.color}18`, color: a.color }}>{a.initial}</span>
+            <div className={`voice-wave ${playingId === a.id ? 'voice-wave--active' : ''}`}>
+              {[...Array(5)].map((_, j) => (
+                <span key={j} className="voice-bar" style={{ animationDelay: `${j * 0.12}s`, background: a.color }} />
+              ))}
+            </div>
+            <span className="voice-name">{a.name}</span>
+            <span className="voice-tone">{a.tone}</span>
+            <p className="voice-intro-text">{a.intro}</p>
+            <span className="voice-play-hint">
+              {playingId === a.id ? 'Playing...' : 'Click to hear'}
+            </span>
+          </div>
+        </Reveal>
+      ))}
     </div>
   )
 }
@@ -462,32 +570,11 @@ export default function Landing() {
 
           <Reveal delay={0.1}>
             <p className="voice-intro">
-              Every agent in the swarm has a distinct ElevenLabs voice. Hover over an agent card and hear it think aloud — the Boss dispatching, the Classifier analyzing, the Strategist escalating. The Letter narrates itself in the algorithm's own cold, corporate voice.
+              Every agent in the swarm has a distinct ElevenLabs voice. Click a card and hear them introduce themselves.
             </p>
           </Reveal>
 
-          <div className="voice-agents">
-            {[
-              { initial: 'B', name: 'Boss',       tone: 'Authoritative · steady cadence' },
-              { initial: 'C', name: 'Classifier',  tone: 'Clinical · flat affect' },
-              { initial: 'X', name: 'Context',     tone: 'Cautious · measured pace' },
-              { initial: 'S', name: 'Strategist',  tone: 'Decisive · crisp delivery' },
-              { initial: 'A', name: 'Synthesis',   tone: 'Cold · confessional calm' },
-            ].map((a, i) => (
-              <Reveal key={a.name} delay={i * 0.08}>
-                <div className="voice-card">
-                  <span className="voice-avatar">{a.initial}</span>
-                  <div className="voice-wave">
-                    {[...Array(5)].map((_, j) => (
-                      <span key={j} className="voice-bar" style={{ animationDelay: `${j * 0.12}s` }} />
-                    ))}
-                  </div>
-                  <span className="voice-name">{a.name}</span>
-                  <span className="voice-tone">{a.tone}</span>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <VoiceAgents />
         </section>
 
         <section className="confession">

@@ -721,6 +721,27 @@
   border-color: rgba(0, 0, 0, 0.15);
 }
 
+.ac-speak-btn--active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.ac-speak-btn--active:hover {
+  background: var(--accent);
+  color: white;
+  filter: brightness(1.1);
+}
+
+.ac--speaking {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(74, 111, 165, 0.15);
+}
+
+.ac-visualizer--speaking .ac-viz-bar {
+  opacity: 1;
+  animation-duration: 0.35s;
+}
+
 /* ── Chevron ────────────────────────────────────────────────────────────── */
 .ac-chevron {
   color: var(--text-light);

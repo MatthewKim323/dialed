@@ -230,7 +230,7 @@ function Lobby({ user, profile, onStart, saveSocialCreds }) {
    AGENT CARD — expandable with thinking dropdown, visualizer, TTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function AgentCard({ agentId, isActive, agentAddress, messages, onSpeak }) {
+function AgentCard({ agentId, isActive, isSpeaking, agentAddress, messages, onSpeak }) {
   const [expanded, setExpanded] = useState(false)
   const meta = AGENT_META[agentId]
   if (!meta) return null
@@ -238,9 +238,10 @@ function AgentCard({ agentId, isActive, agentAddress, messages, onSpeak }) {
   const agentMessages = messages.filter(m => m.from?.toLowerCase() === agentId)
   const recentMessages = agentMessages.slice(-5)
   const lastMessage = recentMessages[recentMessages.length - 1]
+  const showViz = isActive || isSpeaking
 
   return (
-    <div className={`ac ${isActive ? 'ac--active' : ''} ${expanded ? 'ac--expanded' : ''}`}>
+    <div className={`ac ${isActive ? 'ac--active' : ''} ${isSpeaking ? 'ac--speaking' : ''} ${expanded ? 'ac--expanded' : ''}`}>
       <div className="ac-header" onClick={() => setExpanded(e => !e)}>
         <div className="ac-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
           {meta.icon}
@@ -253,8 +254,8 @@ function AgentCard({ agentId, isActive, agentAddress, messages, onSpeak }) {
           )}
         </div>
         <div className="ac-controls">
-          {isActive && (
-            <div className="ac-visualizer" style={{ color: meta.color }}>
+          {showViz && (
+            <div className={`ac-visualizer ${isSpeaking ? 'ac-visualizer--speaking' : ''}`} style={{ color: meta.color }}>
               <span className="ac-viz-bar" />
               <span className="ac-viz-bar" />
               <span className="ac-viz-bar" />
@@ -262,17 +263,21 @@ function AgentCard({ agentId, isActive, agentAddress, messages, onSpeak }) {
             </div>
           )}
           <button
-            className="ac-speak-btn"
+            className={`ac-speak-btn ${isSpeaking ? 'ac-speak-btn--active' : ''}`}
             onClick={(e) => {
               e.stopPropagation()
               onSpeak(agentId, lastMessage?.msg || 'No messages yet')
             }}
-            title="Speak latest message"
+            title={isSpeaking ? 'Stop speaking' : 'Speak latest message'}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/>
-              <path d="M15.54 8.46a5 5 0 010 7.07"/>
-            </svg>
+            {isSpeaking ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/>
+                <path d="M15.54 8.46a5 5 0 010 7.07"/>
+              </svg>
+            )}
           </button>
           <div className={`ac-dot ${isActive ? 'ac-dot--on' : ''}`} />
           <svg className={`ac-chevron ${expanded ? 'ac-chevron--open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -682,8 +687,34 @@ function ActiveSession({ onEnd, credentials }) {
     } catch { /* ignore */ }
   }
 
-  const handleSpeak = (agentId, text) => {
-    console.log(`[TTS] ${AGENT_META[agentId]?.label}: ${text}`)
+  const [speakingAgent, setSpeakingAgent] = useState(null)
+  const audioRef = useRef(null)
+
+  const handleSpeak = async (agentId, text) => {
+    if (speakingAgent === agentId) {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      setSpeakingAgent(null)
+      return
+    }
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    setSpeakingAgent(agentId)
+    try {
+      const resp = await fetch(`${API_URL}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_id: agentId, text }),
+      })
+      if (!resp.ok) { setSpeakingAgent(null); return }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onended = () => { setSpeakingAgent(null); audioRef.current = null; URL.revokeObjectURL(url) }
+      audio.onerror = () => { setSpeakingAgent(null); audioRef.current = null }
+      await audio.play()
+    } catch {
+      setSpeakingAgent(null)
+    }
   }
 
   // ── Session Summary view ──────────────────────────────────────────────
@@ -893,6 +924,7 @@ function ActiveSession({ onEnd, credentials }) {
                 key={id}
                 agentId={id}
                 isActive={activeAgents.has(id)}
+                isSpeaking={speakingAgent === id}
                 agentAddress={agentAddresses[id]}
                 messages={messages}
                 onSpeak={handleSpeak}

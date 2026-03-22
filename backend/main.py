@@ -47,6 +47,20 @@ if agentverse_key:
 else:
     print("⚠️  AGENTVERSE_API_KEY not found — mailbox registration may fail\n", flush=True)
 
+elevenlabs_key = _read_key_from_file(env_path, "ELEVENLABS_API_KEY") or os.getenv("ELEVENLABS_API_KEY", "")
+if elevenlabs_key:
+    print(f"✅ ELEVENLABS_API_KEY loaded ({elevenlabs_key[:12]}...)\n", flush=True)
+else:
+    print("⚠️  ELEVENLABS_API_KEY not found — TTS will be unavailable\n", flush=True)
+
+AGENT_VOICES = {
+    "boss": "1hR2qVedP7lrOxD8z7OH",
+    "classifier": "g2W4HAjKvdW93AmsjsOx",
+    "context": "EWx0RRDmpbbmVRmQfzC0",
+    "strategist": "Te3lE8ImQx0Z8EfP7o5b",
+    "synthesis": "sIak7pFapfSLCfctxdOu",
+}
+
 app = FastAPI(title="Dialed Backend")
 
 app.add_middleware(
@@ -737,6 +751,63 @@ async def get_agents():
         "agents": get_agent_info(),
         "bureau": get_bureau_info(),
     }
+
+
+class TTSRequest(BaseModel):
+    agent_id: str
+    text: str
+
+
+@app.post("/api/tts")
+async def text_to_speech(req: TTSRequest):
+    """Generate speech audio for an agent using ElevenLabs."""
+    if not elevenlabs_key:
+        raise HTTPException(status_code=503, detail="ElevenLabs API key not configured")
+
+    voice_id = AGENT_VOICES.get(req.agent_id)
+    if not voice_id:
+        raise HTTPException(status_code=400, detail=f"No voice configured for agent: {req.agent_id}")
+
+    if not req.text.strip():
+        raise HTTPException(status_code=400, detail="Empty text")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as http:
+            resp = await http.post(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+                headers={
+                    "xi-api-key": elevenlabs_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "text": req.text[:500],
+                    "model_id": "eleven_flash_v2_5",
+                    "voice_settings": {
+                        "stability": 0.5,
+                        "similarity_boost": 0.75,
+                    },
+                },
+            )
+
+        if resp.status_code != 200:
+            detail = resp.text[:200]
+            print(f"ElevenLabs error ({resp.status_code}): {detail}", flush=True)
+            raise HTTPException(status_code=502, detail=f"ElevenLabs error: {resp.status_code}")
+
+        from fastapi.responses import Response
+        return Response(
+            content=resp.content,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": f'inline; filename="{req.agent_id}.mp3"'},
+        )
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="ElevenLabs timeout")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"TTS error: {e}", flush=True)
+        raise HTTPException(status_code=500, detail=str(e)[:100])
 
 
 @app.get("/api/session/status", response_model=SessionStatus)
