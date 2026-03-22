@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
+import Docs from './pages/Docs'
 
 const EASE = [0.22, 1, 0.36, 1]
 
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="onboarding" element={<Onboarding />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="docs" element={<Docs />} />
           </Routes>
         </motion.div>
       )}

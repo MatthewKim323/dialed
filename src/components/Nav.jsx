@@ -89,7 +89,7 @@ export default function Nav() {
         </ul>
 
         <div className="nl-right">
-          <a href="#" className="nl-link">Docs</a>
+          <Link to="/docs" className="nl-link">Docs</Link>
           <button className="nl-cta" onClick={handleStart}>
             {user && profile ? 'Dashboard' : 'Start Pipeline'}
           </button>
