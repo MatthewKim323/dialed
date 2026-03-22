@@ -181,7 +181,7 @@ const VOICE_AGENTS = [
     initial: 'B',
     name: 'Boss',
     color: '#4a6fa5',
-    tone: 'Authoritative · steady cadence',
+    tone: 'Authoritative · crisp delivery',
     intro: "I'm the Boss Agent — I coordinate the entire swarm. When content enters the pipeline, I dispatch it to the Classifier and Context agents simultaneously, aggregate their verdicts, and decide the final call. Every decision goes through me.",
   },
   {
@@ -189,7 +189,7 @@ const VOICE_AGENTS = [
     initial: 'C',
     name: 'Classifier',
     color: '#C0502A',
-    tone: 'Clinical · flat affect',
+    tone: 'Sharp · analytical cadence',
     intro: "I'm the Classifier. I analyze every piece of content for manipulation tactics — rage bait, FOMO hooks, social comparison traps, outrage amplification. I score each one with a confidence rating and flag what's designed to hijack your attention.",
   },
   {
@@ -197,7 +197,7 @@ const VOICE_AGENTS = [
     initial: 'X',
     name: 'Context',
     color: '#7c4dbd',
-    tone: 'Cautious · measured pace',
+    tone: 'Warm · measured pace',
     intro: "I'm the Context Agent. I track your session state — how much brain rot you've been exposed to, how fatigued your attention is, and whether we need to escalate. I adjust the detection threshold in real time based on what I'm seeing.",
   },
   {
@@ -205,7 +205,7 @@ const VOICE_AGENTS = [
     initial: 'S',
     name: 'Strategist',
     color: '#9a6f15',
-    tone: 'Decisive · crisp delivery',
+    tone: 'Confident · rhythmic flow',
     intro: "I'm the Strategist. When brain rot is confirmed, I decide exactly what to do about it — warning overlay, content block, or a full account ban. The severity depends on the confidence score and the session state. I don't hesitate.",
   },
   {
@@ -213,7 +213,7 @@ const VOICE_AGENTS = [
     initial: 'A',
     name: 'Synthesis',
     color: '#1e8449',
-    tone: 'Reflective · calm delivery',
+    tone: 'Smooth · unsettling calm',
     intro: "I'm the Synthesis Agent. When your session ends, I generate the full report — every tactic caught, every intervention fired, every second of attention reclaimed. I give you the complete picture of what the algorithm tried and what your agents stopped.",
   },
 ]
