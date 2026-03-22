@@ -7,6 +7,7 @@ from pathlib import Path
 import asyncio
 import os
 import traceback
+import httpx
 from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -25,11 +26,26 @@ def _read_key_from_file(path, key):
 
 
 api_key = _read_key_from_file(env_path, "BROWSER_USE_API_KEY") or os.getenv("BROWSER_USE_API_KEY", "")
+anthropic_key = _read_key_from_file(env_path, "ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_API_KEY", "")
 
 if not api_key:
-    print(f"\n⚠️  BROWSER_USE_API_KEY not found in {env_path}\n", flush=True)
+    print("\n⚠️  BROWSER_USE_API_KEY not found\n", flush=True)
 else:
-    print(f"\n✅ BROWSER_USE_API_KEY loaded ({api_key[:8]}...) from {env_path}\n", flush=True)
+    print(f"\n✅ BROWSER_USE_API_KEY loaded ({api_key[:8]}...)\n", flush=True)
+
+if not anthropic_key:
+    print("⚠️  ANTHROPIC_API_KEY not found\n", flush=True)
+else:
+    print(f"✅ ANTHROPIC_API_KEY loaded ({anthropic_key[:12]}...)\n", flush=True)
+
+os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+
+agentverse_key = _read_key_from_file(env_path, "AGENTVERSE_API_KEY") or os.getenv("AGENTVERSE_API_KEY", "")
+if agentverse_key:
+    os.environ["AGENTVERSE_API_KEY"] = agentverse_key
+    print(f"✅ AGENTVERSE_API_KEY loaded ({agentverse_key[:20]}...)\n", flush=True)
+else:
+    print("⚠️  AGENTVERSE_API_KEY not found — mailbox registration may fail\n", flush=True)
 
 app = FastAPI(title="Dialed Backend")
 
@@ -44,6 +60,16 @@ app.add_middleware(
 client = AsyncBrowserUse(api_key=api_key)
 
 MOBILE_W, MOBILE_H = 390, 844
+
+
+# ── Import Fetch.ai agents ────────────────────────────────────────────────
+
+from agents import (
+    start_bureau, get_boss_rest_url, get_agent_info, get_bureau_info,
+    set_broadcast_hook, set_agent_active_hook, reset_memory,
+    AGENT_ADDRESS_MAP,
+)
+import re
 
 
 # ── Models ────────────────────────────────────────────────────────────────
@@ -80,14 +106,12 @@ class SessionStatus(BaseModel):
     state: str
 
 
-# ── Agent definitions (for frontend agent cards) ─────────────────────────
-
-AGENTS = [
-    {"id": "boss",        "name": "Boss Agent",      "role": "Dispatch & Coordination"},
-    {"id": "classifier",  "name": "Classifier",      "role": "Brain Rot Detection"},
-    {"id": "context",     "name": "Context Agent",    "role": "Session State Machine"},
-    {"id": "strategist",  "name": "Strategist",       "role": "Intervention Planning"},
-    {"id": "synthesis",   "name": "Synthesis Agent",   "role": "Letter & Narration"},
+AGENTS_LIST = [
+    {"id": "boss",       "name": "Boss Agent",    "role": "Dispatch & Coordination"},
+    {"id": "classifier", "name": "Classifier",    "role": "Brain Rot Detection"},
+    {"id": "context",    "name": "Context Agent",  "role": "Session State Machine"},
+    {"id": "strategist", "name": "Strategist",     "role": "Intervention Planning"},
+    {"id": "synthesis",  "name": "Synthesis Agent", "role": "Letter & Narration"},
 ]
 
 
@@ -131,6 +155,42 @@ async def set_agent_active(agent_id: str, active: bool):
     await broadcast({"type": "agent_status", "agent_id": agent_id, "active": active})
 
 
+# Wire broadcast hooks into agents (same event loop, no threading needed)
+set_broadcast_hook(broadcast)
+set_agent_active_hook(set_agent_active)
+
+
+# ── Bureau startup ────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+async def startup():
+    print("🚀 Starting Fetch.ai Bureau...", flush=True)
+    await start_bureau()
+
+
+# ── Send content to Boss Agent via REST ───────────────────────────────────
+
+async def send_to_boss(content_request: dict) -> Optional[dict]:
+    url = get_boss_rest_url()
+    idx = content_request.get("content_index", "?")
+    print(f"📤 Sending #{idx} to Boss at {url}...", flush=True)
+    try:
+        async with httpx.AsyncClient(timeout=90) as http:
+            resp = await http.post(url, json=content_request)
+            if resp.status_code == 200:
+                data = resp.json()
+                print(f"📥 Boss returned #{idx}: brain_rot={data.get('is_brain_rot')} conf={data.get('confidence')}", flush=True)
+                return data
+            print(f"❌ Boss returned {resp.status_code}: {resp.text[:300]}", flush=True)
+            return None
+    except httpx.TimeoutException:
+        print(f"⏰ Boss timed out on #{idx} (90s)", flush=True)
+        return None
+    except Exception as e:
+        print(f"❌ Error sending #{idx} to Boss: {e}", flush=True)
+        return None
+
+
 # ── Scout Loop ────────────────────────────────────────────────────────────
 
 async def scout_loop():
@@ -171,7 +231,7 @@ async def scout_loop():
             })
             return
 
-        # ── 2FA pause: wait for user to provide the code ──────────────
+        # ── 2FA pause ─────────────────────────────────────────────────
         state.twofa_event.clear()
         state.twofa_code = None
         await broadcast({
@@ -181,12 +241,11 @@ async def scout_loop():
         })
         await broadcast({"type": "2fa_required"})
 
-        print("⏳ Waiting for user to provide 2FA code...", flush=True)
+        print("⏳ Waiting for 2FA code...", flush=True)
         await state.twofa_event.wait()
         code = state.twofa_code
-        print(f"✅ 2FA code received ({code[:2]}...) — agent entering code", flush=True)
+        print("✅ 2FA code received — agent entering code", flush=True)
 
-        # Agent enters the code autonomously
         try:
             await broadcast({
                 "type": "ticker", "from": "Scout", "to": "System",
@@ -235,22 +294,37 @@ async def scout_loop():
         })
         return
 
-    # ── Extraction loop ───────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════════════
+    #  CLOSED-LOOP PIPELINE
+    #  Step 1: Extract (browser agent reads current Reel, does NOT scroll)
+    #  Step 2: Analyze (Fetch.ai Bureau — Classifier, Context, etc.)
+    #  Step 3: Act (browser agent likes/interacts OR skips, then scrolls)
+    #  Step 4: Repeat from Step 1 on the next Reel
+    # ══════════════════════════════════════════════════════════════════
+    session_start = asyncio.get_event_loop().time()
+    await set_agent_active("boss", False)
+
     while state.session and state.session.id == session_id:
         try:
             state.content_index += 1
             idx = state.content_index
 
-            await set_agent_active("boss", True)
+            # ── STEP 1: EXTRACT (no scrolling) ────────────────────────
+            await broadcast({
+                "type": "ticker", "from": "Scout", "to": "System",
+                "msg": f"Reading Reel #{idx}...",
+                "msg_type": "system",
+            })
 
             result = await client.run(
-                """Look at the current Reel on screen. Extract:
-                - The full caption text (or empty string if not visible)
-                - The creator's handle / username
-                - The visible like count (or "N/A")
-                - The visible comment count (or "N/A")
-                - A brief visual description of what the Reel shows
-                After extracting, scroll down to advance to the next Reel.""",
+                "Look at the current Instagram Reel on screen. Extract the following "
+                "WITHOUT scrolling or interacting with anything:\n"
+                "- The full caption text (or empty string if not visible)\n"
+                "- The creator's handle / username\n"
+                "- The visible like count (or 'N/A')\n"
+                "- The visible comment count (or 'N/A')\n"
+                "- A brief visual description of what the Reel shows\n"
+                "Do NOT scroll. Do NOT tap anything. Just read and return the data.",
                 session_id=session_id,
                 output_schema=ReelContent,
             )
@@ -264,18 +338,102 @@ async def scout_loop():
                 "msg_type": "payload",
             })
 
-            # Simulate agent pipeline
-            await set_agent_active("classifier", True)
-            await broadcast({
-                "type": "ticker", "from": "Boss", "to": "Classifier",
-                "msg": f"Dispatching #{idx} for classification — checking against intent profile",
-                "msg_type": "dispatch",
-            })
+            # ── STEP 2: ANALYZE (Fetch.ai Bureau) ─────────────────────
+            elapsed = int(asyncio.get_event_loop().time() - session_start)
+            content_req = {
+                "content_index": idx,
+                "extracted_text": reel.caption_text,
+                "creator_handle": reel.creator_handle,
+                "engagement_likes": reel.like_count,
+                "engagement_comments": reel.comment_count,
+                "visual_description": reel.visual_description,
+                "scroll_depth": idx,
+                "session_duration_s": elapsed,
+                "intent_purpose": [],
+                "intent_triggers": [],
+                "intent_aggressiveness": "moderate",
+            }
+
+            pipeline_result = await send_to_boss(content_req)
+
+            if not pipeline_result:
+                # Analysis failed — scroll past without liking, try next
+                await broadcast({
+                    "type": "ticker", "from": "Boss", "to": "Scout",
+                    "msg": f"Analysis failed for #{idx} — skipping without interaction.",
+                    "msg_type": "system",
+                })
+                await client.run(
+                    "Scroll down to advance to the next Reel and wait for it to load. "
+                    "Do NOT like or interact with anything.",
+                    session_id=session_id,
+                )
+                await asyncio.sleep(1)
+                continue
+
+            is_brain_rot = pipeline_result.get("is_brain_rot", False)
+            overlay_msg = pipeline_result.get("overlay_message", "")
+            new_state = pipeline_result.get("session_state")
+            if new_state:
+                state.session_state = new_state
 
             await broadcast({"type": "stats", **state.stats})
-            await set_agent_active("classifier", False)
-            await set_agent_active("boss", False)
 
+            # ── STEP 3: ACT (browser agent executes the verdict) ──────
+            if is_brain_rot:
+                state.stats["detected"] += 1
+                state.stats["interventions"] += 1
+                state.stats["reclaimed"] += 15
+
+                await broadcast({
+                    "type": "ticker", "from": "Strategist", "to": "Scout",
+                    "msg": f"SKIP #{idx} — brain rot confirmed. Scrolling past.",
+                    "msg_type": "intervention",
+                })
+
+                if overlay_msg:
+                    await broadcast({
+                        "type": "intervention_overlay",
+                        "message": overlay_msg,
+                        "content_index": idx,
+                    })
+                    await asyncio.sleep(2)
+
+                await client.run(
+                    "The current Reel has been flagged as harmful content. "
+                    "Do NOT like it. Do NOT interact with it. "
+                    "Scroll down to advance to the next Reel and wait for it to load.",
+                    session_id=session_id,
+                )
+
+                await broadcast({
+                    "type": "ticker", "from": "Scout", "to": "System",
+                    "msg": f"Skipped #{idx}. Moved to next Reel.",
+                    "msg_type": "system",
+                })
+            else:
+                await broadcast({
+                    "type": "ticker", "from": "Boss", "to": "Scout",
+                    "msg": f"CLEAR #{idx} — content is safe. Engaging + advancing.",
+                    "msg_type": "clear",
+                })
+
+                await client.run(
+                    "The current Reel has been approved as safe content. "
+                    "Double-tap the Reel to like it. "
+                    "Then scroll down to advance to the next Reel and wait for it to load.",
+                    session_id=session_id,
+                )
+
+                await broadcast({
+                    "type": "ticker", "from": "Scout", "to": "System",
+                    "msg": f"Liked + advanced past #{idx}. Ready for next.",
+                    "msg_type": "system",
+                })
+
+            await broadcast({"type": "stats", **state.stats})
+
+            # Brief pause before next cycle
             await asyncio.sleep(1)
 
         except asyncio.CancelledError:
@@ -283,10 +441,18 @@ async def scout_loop():
         except Exception as e:
             await broadcast({
                 "type": "ticker", "from": "Scout", "to": "System",
-                "msg": f"Extraction error: {str(e)[:120]}",
+                "msg": f"Pipeline error: {str(e)[:120]}",
                 "msg_type": "system",
             })
-            await asyncio.sleep(5)
+            # On error, try to scroll past the current Reel and continue
+            try:
+                await client.run(
+                    "Scroll down to advance to the next Reel.",
+                    session_id=session_id,
+                )
+            except Exception:
+                pass
+            await asyncio.sleep(3)
 
     await set_agent_active("boss", False)
 
@@ -299,7 +465,6 @@ _start_lock = asyncio.Lock()
 @app.post("/api/session/start", response_model=SessionResponse)
 async def start_session(req: StartSessionRequest = StartSessionRequest()):
     if state.session:
-        print("Session already running — returning existing URL", flush=True)
         return SessionResponse(live_url=state.session.live_url)
 
     async with _start_lock:
@@ -325,9 +490,9 @@ async def start_session(req: StartSessionRequest = StartSessionRequest()):
         state.session_state = "NORMAL"
         state.active_agents = set()
         state.chat_history = []
+        reset_memory()
 
         state.scout_task = asyncio.create_task(scout_loop())
-
         return SessionResponse(live_url=session.live_url)
 
 
@@ -350,7 +515,6 @@ async def stop_session():
 
 @app.post("/api/session/2fa-complete")
 async def twofa_complete(req: TwoFARequest):
-    """User provides the 2FA code — agent will enter it autonomously."""
     state.twofa_code = req.code
     state.twofa_event.set()
     await broadcast({
@@ -363,56 +527,143 @@ async def twofa_complete(req: TwoFARequest):
 
 @app.post("/api/session/chat")
 async def user_chat(req: UserChatRequest):
-    """User sends a command to the agent swarm via the Boss Agent."""
-    msg = req.message.strip()
-    if not msg:
+    """Route user chat to Fetch.ai agents via @mention.
+    @classifier why did you flag that? → routes to Classifier agent
+    No @mention → defaults to Boss Agent.
+    Same chat logic that powers the Agentverse ChatMessage handlers."""
+    raw = req.message.strip()
+    if not raw:
         raise HTTPException(status_code=400, detail="Empty message")
 
-    await broadcast({
-        "type": "chat", "role": "user", "message": msg,
-    })
-    state.chat_history.append({"role": "user", "message": msg})
+    await broadcast({"type": "chat", "role": "user", "message": raw})
+    state.chat_history.append({"role": "user", "message": raw})
 
-    # TODO: Route through Fetch.ai Boss Agent → Claude for intent classification
-    # For now, the Boss Agent acknowledges and responds contextually
-    await set_agent_active("boss", True)
-
-    lower = msg.lower()
-    if any(w in lower for w in ["aggressive", "harder", "more"]):
-        response = "Copy that. Shifting Context Agent to ELEVATED — thresholds tightened. I'll flag more aggressively."
-        state.session_state = "ELEVATED"
-        await broadcast({"type": "state_change", "state": "ELEVATED"})
-    elif any(w in lower for w in ["chill", "relax", "cool", "less"]):
-        response = "Understood. Entering manual cooldown — suppressing interventions for 2 minutes."
-        state.session_state = "COOLDOWN"
-        await broadcast({"type": "state_change", "state": "COOLDOWN"})
-    elif any(w in lower for w in ["time", "save", "reclaim", "stats"]):
-        s = state.stats
-        response = f"Session stats: {s['scanned']} Reels scanned, {s['detected']} brain rot detected, {s['interventions']} interventions fired, {s['reclaimed']}s of attention reclaimed."
-    elif any(w in lower for w in ["why", "explain", "flag", "last"]):
-        await set_agent_active("classifier", True)
-        response = "The last flagged content matched rage bait patterns — manufactured outrage with high engagement-to-value ratio. Confidence was above threshold for the current session state."
-        await set_agent_active("classifier", False)
-    elif any(w in lower for w in ["stop", "end", "quit"]):
-        response = "Ending session. Generating summary..."
+    # Parse @mention
+    match = re.match(r"^@(\w+)\s+(.*)", raw, re.DOTALL)
+    if match:
+        target = match.group(1).lower()
+        message_text = match.group(2)
     else:
-        response = f"Acknowledged: \"{msg[:60]}\". I'll adjust the pipeline accordingly."
+        target = "boss"
+        message_text = raw
 
-    await asyncio.sleep(0.3)
+    AGENT_NAMES = {
+        "boss": "Boss Agent", "classifier": "Classifier",
+        "context": "Context Agent", "strategist": "Strategist",
+        "synthesis": "Synthesis Agent",
+    }
 
+    if target not in AGENT_ADDRESS_MAP:
+        await broadcast({
+            "type": "chat", "role": "agent", "agent_id": "boss",
+            "agent_name": "Boss Agent",
+            "message": f"Unknown agent: @{target}. Try @boss @classifier @context @strategist @synthesis",
+        })
+        return {"response": f"Unknown agent: @{target}", "agent": "boss"}
+
+    # Route to the target agent's chat logic (same functions the ChatMessage handlers use)
+    from agents import (
+        boss_agent, classifier_agent, context_agent, strategist_agent, synthesis_agent,
+        memory as agent_memory,
+    )
+
+    await set_agent_active(target, True)
+
+    if target == "boss":
+        lower = message_text.lower()
+        if any(w in lower for w in ["aggressive", "harder", "more"]):
+            agent_memory.state = "ELEVATED"
+            agent_memory.threshold = 0.50
+            response = "Copy that. Shifting to ELEVATED — thresholds tightened."
+            state.session_state = "ELEVATED"
+            await broadcast({"type": "state_change", "state": "ELEVATED"})
+        elif any(w in lower for w in ["chill", "relax", "cool", "less"]):
+            agent_memory.state = "COOLDOWN"
+            agent_memory.threshold = 0.90
+            response = "Understood. Entering cooldown — suppressing interventions."
+            state.session_state = "COOLDOWN"
+            await broadcast({"type": "state_change", "state": "COOLDOWN"})
+        elif any(w in lower for w in ["time", "save", "reclaim", "stats"]):
+            response = (
+                f"Session stats: {agent_memory.total_seen} scanned, {agent_memory.brain_rot_count} brain rot, "
+                f"{agent_memory.interventions_fired} interventions, {agent_memory.time_reclaimed}s reclaimed."
+            )
+        elif any(w in lower for w in ["state", "status"]):
+            response = (
+                f"State: {agent_memory.state}. Threshold: {agent_memory.threshold:.2f}. "
+                f"Brain rot: {agent_memory.brain_rot_count}/{agent_memory.total_seen}."
+            )
+        elif any(w in lower for w in ["stop", "end", "quit"]):
+            response = "Ending session. Generating summary..."
+        else:
+            response = f'Acknowledged: "{message_text[:60]}". Routing to pipeline.'
+
+    elif target == "classifier":
+        lv = agent_memory.last_classification
+        lower = message_text.lower()
+        if any(w in lower for w in ["why", "flag", "explain", "last", "rationale"]) and lv:
+            response = (
+                f"I flagged Reel #{lv.get('content_index', '?')} with "
+                f"{lv.get('confidence', 0):.0%} confidence. "
+                f"Tactics: {', '.join(lv.get('detected_tactics', []))}. "
+                f"Rationale: {lv.get('rationale', 'N/A')}"
+            )
+        elif any(w in lower for w in ["criteria", "how", "what", "detect"]):
+            response = (
+                "I evaluate: rage bait, FOMO, social comparison, outrage amplification, "
+                "parasocial exploitation, engagement bait, cliffhanger hooks. "
+                "Each Reel gets a confidence score (0.0-1.0)."
+            )
+        else:
+            response = "I'm the Classifier. Ask me why I flagged something or about my detection criteria."
+
+    elif target == "context":
+        recent = agent_memory.recent_verdicts[-10:]
+        ratio = sum(recent) / len(recent) if recent else 0
+        fatigue = min(len(agent_memory.interventions_timestamps) / 6.0, 1.0)
+        response = (
+            f"State: {agent_memory.state}. Threshold: {agent_memory.threshold:.2f}. "
+            f"Brain rot density: {ratio:.0%} in last {len(recent)}. "
+            f"Fatigue: {fatigue:.2f}. Interventions: {agent_memory.interventions_fired}."
+        )
+
+    elif target == "strategist":
+        lv = agent_memory.last_verdict
+        if lv and lv.get("is_brain_rot"):
+            response = (
+                f"Last intervention on #{lv.get('content_index', '?')}: "
+                f"state={lv.get('session_state', 'NORMAL')}, conf={lv.get('confidence', 0):.2f}. "
+                f"High confidence + elevated state = overlay. Below threshold = pass."
+            )
+        else:
+            response = "No interventions yet. I decide severity based on confidence, state, and escalation matrix."
+
+    elif target == "synthesis":
+        if agent_memory.letter_paragraphs:
+            letter = "\n\n".join(agent_memory.letter_paragraphs)
+            response = f"Letter so far:\n\n{letter}"
+        else:
+            response = "The Letter hasn't started yet. Once brain rot is detected, I'll begin writing."
+
+    else:
+        response = f"@{target} received your message."
+
+    await set_agent_active(target, False)
     await broadcast({
-        "type": "chat", "role": "agent", "agent_id": "boss",
-        "agent_name": "Boss Agent", "message": response,
+        "type": "chat", "role": "agent", "agent_id": target,
+        "agent_name": AGENT_NAMES.get(target, target),
+        "message": response,
     })
-    state.chat_history.append({"role": "agent", "agent_id": "boss", "message": response})
-
-    await set_agent_active("boss", False)
-    return {"response": response, "agent": "boss"}
+    state.chat_history.append({"role": "agent", "agent_id": target, "message": response})
+    return {"response": response, "agent": target, "address": AGENT_ADDRESS_MAP[target]}
 
 
 @app.get("/api/agents")
 async def get_agents():
-    return {"agents": AGENTS}
+    return {
+        "agents": get_agent_info(),
+        "bureau": get_bureau_info(),
+    }
 
 
 @app.get("/api/session/status", response_model=SessionStatus)
@@ -426,17 +677,11 @@ async def session_status():
 
 @app.get("/api/health")
 async def health():
-    has_key = bool(api_key)
-    test_ok = False
-    error_msg = None
-    if has_key:
-        try:
-            session = await client.sessions.create()
-            test_ok = True
-            await client.sessions.stop(str(session.id))
-        except Exception as e:
-            error_msg = f"{type(e).__name__}: {e}"
-    return {"api_key_set": has_key, "session_test": test_ok, "error": error_msg}
+    return {
+        "browser_use_key": bool(api_key),
+        "anthropic_key": bool(anthropic_key),
+        "bureau": get_bureau_info(),
+    }
 
 
 @app.websocket("/ws")
