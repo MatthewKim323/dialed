@@ -317,7 +317,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.0, ease: EASE_OUT, delay: 0.3 }}
           >
-            Mental health · AI agents · Real-time defense
+            Mental Health Track &nbsp;*&nbsp; BeachHacks 9.0 &nbsp;*&nbsp; Made with love in Long Beach
           </motion.p>
 
           <motion.h1
