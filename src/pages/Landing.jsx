@@ -491,41 +491,45 @@ export default function Landing() {
         </section>
 
         <section className="command-center">
-          <Reveal>
-            <p className="section-label">User control</p>
-            <h2 className="section-heading">
-              You command<br />the swarm.
-            </h2>
-          </Reveal>
+          <div className="cmd-layout">
+            <div className="cmd-text">
+              <Reveal>
+                <p className="section-label">User control</p>
+                <h2 className="section-heading">
+                  You command<br />the swarm.
+                </h2>
+              </Reveal>
 
-          <Reveal delay={0.1}>
-            <p className="cmd-intro">
-              This isn't a passive demo. Talk to your agents mid-session — adjust aggressiveness, whitelist creators, ask for explanations. They respond in their own voice.
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.15}>
-            <div className="cmd-chat-demo">
-              {[
-                { role: 'user',  text: 'Go more aggressive.' },
-                { role: 'agent', agent: 'Context', text: 'Shifting to Elevated state. Thresholds tightened — near-zero tolerance active.' },
-                { role: 'user',  text: 'Why did you flag that last one?' },
-                { role: 'agent', agent: 'Classifier', text: 'Rage bait detected. Outrage amplification pattern with 0.91 confidence. Creator @drama_daily_tea flagged twice this session.' },
-                { role: 'user',  text: 'How much time have you saved me?' },
-                { role: 'agent', agent: 'Boss', text: '23 Reels scanned. 9 brain rot detections. 6 interventions. 4 min 12 sec reclaimed.' },
-              ].map((m, i) => (
-                <Reveal key={i} delay={i * 0.08}>
-                  <div className={`cmd-bubble cmd-bubble--${m.role}`}>
-                    {m.agent && <span className="cmd-agent">{m.agent}</span>}
-                    <span>{m.text}</span>
-                  </div>
-                </Reveal>
-              ))}
-              <div className="cmd-input-mock">
-                <span>Talk to your agents...</span>
-              </div>
+              <Reveal delay={0.1}>
+                <p className="cmd-intro">
+                  This isn't a passive demo. Talk to your agents mid-session — adjust aggressiveness, whitelist creators, ask for explanations. They respond in their own voice.
+                </p>
+              </Reveal>
             </div>
-          </Reveal>
+
+            <Reveal delay={0.15}>
+              <div className="cmd-chat-demo">
+                {[
+                  { role: 'user',  text: 'Go more aggressive.' },
+                  { role: 'agent', agent: 'Context', text: 'Shifting to Elevated state. Thresholds tightened — near-zero tolerance active.' },
+                  { role: 'user',  text: 'Why did you flag that last one?' },
+                  { role: 'agent', agent: 'Classifier', text: 'Rage bait detected. Outrage amplification pattern with 0.91 confidence. Creator @drama_daily_tea flagged twice this session.' },
+                  { role: 'user',  text: 'How much time have you saved me?' },
+                  { role: 'agent', agent: 'Boss', text: '23 Reels scanned. 9 brain rot detections. 6 interventions. 4 min 12 sec reclaimed.' },
+                ].map((m, i) => (
+                  <Reveal key={i} delay={i * 0.08}>
+                    <div className={`cmd-bubble cmd-bubble--${m.role}`}>
+                      {m.agent && <span className="cmd-agent">{m.agent}</span>}
+                      <span>{m.text}</span>
+                    </div>
+                  </Reveal>
+                ))}
+                <div className="cmd-input-mock">
+                  <span>Talk to your agents...</span>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </section>
 
         <div className="marquee marquee--reverse" aria-hidden>
