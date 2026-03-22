@@ -23,7 +23,7 @@ const MOCK_TICKER = [
   { delay: 16500, from: 'Context',    to: 'Boss',         msg: 'State: NORMAL — concur with verdict — no intervention fatigue',                           type: 'context' },
   { delay: 17500, from: 'Boss',       to: 'Strategist',   msg: 'Confirmed brain rot — requesting intervention strategy',                                 type: 'verdict' },
   { delay: 19000, from: 'Strategist', to: 'System',       msg: 'WARNING OVERLAY — "This content uses clickbait tactics"',                                type: 'intervention' },
-  { delay: 20500, from: 'Synthesis',  to: 'Letter',       msg: 'Appending — tactic: curiosity gap — hook: manufactured suspense',                         type: 'synthesis' },
+  { delay: 20500, from: 'Synthesis',  to: 'Boss',         msg: 'Recording — tactic: curiosity gap — flagged for session report',                          type: 'synthesis' },
   { delay: 24000, from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #3 — @chef.marco — "3-ingredient pasta" — 28.1K likes',                   type: 'payload' },
   { delay: 26000, from: 'Classifier', to: 'Boss',         msg: 'CLEAR — cooking content — no manipulation — conf: 0.11',                                 type: 'clear' },
   { delay: 30000, from: 'Scout',      to: 'Boss',         msg: 'ContentPayload #4 — @hot.takes — "This is EVERYTHING wrong with your generation"',       type: 'payload' },
@@ -31,16 +31,8 @@ const MOCK_TICKER = [
   { delay: 33500, from: 'Classifier', to: 'Boss',         msg: 'BRAIN ROT — rage bait + outrage amplification — conf: 0.94',                             type: 'alert' },
   { delay: 35000, from: 'Context',    to: 'Boss',         msg: 'ESCALATING → ELEVATED — 2 detections in 5 items — threshold now 0.50',                    type: 'escalate' },
   { delay: 37000, from: 'Strategist', to: 'System',       msg: 'FULL OVERLAY — severity: HIGH — "Rage bait detected."',                                  type: 'intervention' },
-  { delay: 38500, from: 'Synthesis',  to: 'Letter',       msg: 'Appending — tactic: outrage amplification — intended emotion: moral indignation',          type: 'synthesis' },
+  { delay: 38500, from: 'Synthesis',  to: 'Boss',         msg: 'Recording — tactic: outrage amplification — added to session report',                     type: 'synthesis' },
 ]
-
-const LETTER_TEXT = `I showed you @drama.central because the curiosity gap in "You won't BELIEVE" has a 73% pause rate with profiles like yours. I knew you'd stop scrolling. That pause was my signal to queue three more just like it.
-
-Then came the outrage. @hot.takes has learned that generational conflict generates the longest view durations in your demographic. I surfaced it because your session engagement was cooling — I needed an emotional spike to pull you back.
-
-The FOMO was my final play. @fomo.life targets the exact insecurity profile your browsing history suggests. I amplified it because two previous interventions had disrupted my retention loop.
-
-Every tactic documented here was deployed against you in real time. None of them landed. Your agents caught each one before the dopamine hook could set.`
 
 const STATE_COLORS = {
   NORMAL:   { bg: 'rgba(42,157,92,0.1)',   color: '#1e8449', border: 'rgba(42,157,92,0.25)' },
@@ -61,7 +53,7 @@ const AGENT_META = {
   classifier: { icon: 'C', color: '#C0502A', label: 'Classifier',     role: 'Brain Rot Detection' },
   context:    { icon: 'X', color: '#7c4dbd', label: 'Context Agent',  role: 'Session State Machine' },
   strategist: { icon: 'S', color: '#9a6f15', label: 'Strategist',     role: 'Intervention Planning' },
-  synthesis:  { icon: 'A', color: '#1e8449', label: 'Synthesis Agent', role: 'Letter & Narration' },
+  synthesis:  { icon: 'A', color: '#1e8449', label: 'Synthesis Agent', role: 'Session Summary & Reports' },
 }
 
 function truncAddr(addr) {
@@ -235,26 +227,81 @@ function Lobby({ user, profile, onStart, saveSocialCreds }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   AGENT CARD
+   AGENT CARD — expandable with thinking dropdown, visualizer, TTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function AgentCard({ agentId, isActive, agentAddress }) {
+function AgentCard({ agentId, isActive, agentAddress, messages, onSpeak }) {
+  const [expanded, setExpanded] = useState(false)
   const meta = AGENT_META[agentId]
   if (!meta) return null
 
+  const agentMessages = messages.filter(m => m.from?.toLowerCase() === agentId)
+  const recentMessages = agentMessages.slice(-5)
+  const lastMessage = recentMessages[recentMessages.length - 1]
+
   return (
-    <div className={`ac ${isActive ? 'ac--active' : ''}`}>
-      <div className="ac-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
-        {meta.icon}
+    <div className={`ac ${isActive ? 'ac--active' : ''} ${expanded ? 'ac--expanded' : ''}`}>
+      <div className="ac-header" onClick={() => setExpanded(e => !e)}>
+        <div className="ac-icon" style={{ background: `${meta.color}18`, color: meta.color }}>
+          {meta.icon}
+        </div>
+        <div className="ac-info">
+          <span className="ac-name">{meta.label}</span>
+          <span className="ac-role">{meta.role}</span>
+          {agentAddress && (
+            <span className="ac-addr" title={agentAddress}>{truncAddr(agentAddress)}</span>
+          )}
+        </div>
+        <div className="ac-controls">
+          {isActive && (
+            <div className="ac-visualizer" style={{ color: meta.color }}>
+              <span className="ac-viz-bar" />
+              <span className="ac-viz-bar" />
+              <span className="ac-viz-bar" />
+              <span className="ac-viz-bar" />
+            </div>
+          )}
+          <button
+            className="ac-speak-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              onSpeak(agentId, lastMessage?.msg || 'No messages yet')
+            }}
+            title="Speak latest message"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/>
+              <path d="M15.54 8.46a5 5 0 010 7.07"/>
+            </svg>
+          </button>
+          <div className={`ac-dot ${isActive ? 'ac-dot--on' : ''}`} />
+          <svg className={`ac-chevron ${expanded ? 'ac-chevron--open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
       </div>
-      <div className="ac-info">
-        <span className="ac-name">{meta.label}</span>
-        <span className="ac-role">{meta.role}</span>
-        {agentAddress && (
-          <span className="ac-addr" title={agentAddress}>{truncAddr(agentAddress)}</span>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            className="ac-dropdown"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: EASE }}
+          >
+            <div className="ac-dropdown-inner">
+              {recentMessages.length > 0 ? recentMessages.map((m, i) => (
+                <div key={i} className="ac-thought">
+                  <TypeLabel type={m.type} />
+                  <span className="ac-thought-msg">{m.msg}</span>
+                </div>
+              )) : (
+                <div className="ac-thought ac-thought--empty">Waiting for activity...</div>
+              )}
+            </div>
+          </motion.div>
         )}
-      </div>
-      <div className={`ac-dot ${isActive ? 'ac-dot--on' : ''}`} />
+      </AnimatePresence>
     </div>
   )
 }
@@ -360,6 +407,99 @@ function UserChat({ chatMessages, onSend }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SESSION SUMMARY — practical report shown when session ends
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function SessionSummary({ stats, messages, sessionTime, onBack }) {
+  const flaggedContent = messages.filter(m => m.type === 'alert' || m.type === 'intervention')
+  const safeContent = messages.filter(m => m.type === 'clear')
+  const totalPayloads = messages.filter(m => m.type === 'payload')
+
+  return (
+    <div className="dash">
+      <nav className="dash-nav">
+        <Link to="/" className="dash-logo">dialed.</Link>
+        <div className="dash-nav-center">
+          <span className="ss-nav-title">Session Report</span>
+        </div>
+        <div className="dash-nav-right" />
+      </nav>
+
+      <div className="ss">
+        <motion.div
+          className="ss-body"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: EASE }}
+        >
+          <div className="ss-duration-bar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Session duration: {formatTime(sessionTime)}</span>
+          </div>
+
+          <div className="ss-stats-grid">
+            <div className="ss-stat">
+              <span className="ss-stat-val">{stats.scanned}</span>
+              <span className="ss-stat-label">Content Scanned</span>
+            </div>
+            <div className="ss-stat ss-stat--alert">
+              <span className="ss-stat-val">{stats.detected}</span>
+              <span className="ss-stat-label">Brain Rot Detected</span>
+            </div>
+            <div className="ss-stat ss-stat--warn">
+              <span className="ss-stat-val">{stats.interventions}</span>
+              <span className="ss-stat-label">Interventions Triggered</span>
+            </div>
+            <div className="ss-stat ss-stat--good">
+              <span className="ss-stat-val">{stats.reclaimed}s</span>
+              <span className="ss-stat-label">Time Reclaimed</span>
+            </div>
+          </div>
+
+          <div className="ss-breakdown">
+            <div className="ss-breakdown-row">
+              <span className="ss-breakdown-label">Detection rate</span>
+              <span className="ss-breakdown-val">{totalPayloads.length > 0 ? Math.round((stats.detected / totalPayloads.length) * 100) : 0}%</span>
+            </div>
+            <div className="ss-breakdown-row">
+              <span className="ss-breakdown-label">Content passed</span>
+              <span className="ss-breakdown-val ss-breakdown-val--safe">{safeContent.length}</span>
+            </div>
+            <div className="ss-breakdown-row">
+              <span className="ss-breakdown-label">Content blocked</span>
+              <span className="ss-breakdown-val ss-breakdown-val--blocked">{flaggedContent.length}</span>
+            </div>
+          </div>
+
+          {flaggedContent.length > 0 && (
+            <div className="ss-flagged">
+              <div className="ss-flagged-header">
+                <span className="ss-flagged-title">Flagged Content Log</span>
+                <span className="ss-flagged-count">{flaggedContent.length} items</span>
+              </div>
+              <div className="ss-flagged-list">
+                {flaggedContent.map((m, i) => (
+                  <div key={i} className="ss-flag-item">
+                    <TypeLabel type={m.type} />
+                    <span className="ss-flag-from">{m.from}</span>
+                    <span className="ss-flag-msg">{m.msg}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button className="ss-back" onClick={onBack}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to Lobby
+          </button>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    ACTIVE SESSION
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -369,10 +509,9 @@ function ActiveSession({ onEnd, credentials }) {
 
   const [sessionTime, setSessionTime] = useState(0)
   const [messages, setMessages] = useState([])
-  const [letterChars, setLetterChars] = useState(0)
-  const [letterStarted, setLetterStarted] = useState(false)
   const [stats, setStats] = useState({ scanned: 0, detected: 0, interventions: 0, reclaimed: 0 })
   const [sessionState, setSessionState] = useState('NORMAL')
+  const [showSummary, setShowSummary] = useState(false)
 
   const [backendConnected, setBackendConnected] = useState(false)
   const [liveUrl, setLiveUrl] = useState(null)
@@ -389,9 +528,10 @@ function ActiveSession({ onEnd, credentials }) {
 
   // Session timer
   useEffect(() => {
+    if (showSummary) return
     const iv = setInterval(() => setSessionTime(t => t + 1), 1000)
     return () => clearInterval(iv)
-  }, [])
+  }, [showSummary])
 
   // Start session
   useEffect(() => {
@@ -422,7 +562,6 @@ function ActiveSession({ onEnd, credentials }) {
 
     startSession()
 
-    // Fetch real Fetch.ai agent addresses + Bureau info
     fetch(`${API_URL}/api/agents`)
       .then(r => r.json())
       .then(data => {
@@ -464,7 +603,6 @@ function ActiveSession({ onEnd, credentials }) {
           setStats(s => ({ ...s, interventions: s.interventions + 1, reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15 }))
         }
         if (data.msg_type === 'escalate') setSessionState('ELEVATED')
-        if (data.msg_type === 'synthesis') setLetterStarted(true)
       }
 
       if (data.type === '2fa_required') setNeeds2FA(true)
@@ -481,9 +619,6 @@ function ActiveSession({ onEnd, credentials }) {
       }
       if (data.type === 'chat') {
         setChatMessages(prev => [...prev, data])
-      }
-      if (data.type === 'letter_append' && data.paragraph) {
-        setLetterStarted(true)
       }
       if (data.type === 'intervention_overlay') {
         setInterventionMsg(data.message)
@@ -507,23 +642,10 @@ function ActiveSession({ onEnd, credentials }) {
           setStats(s => ({ ...s, interventions: s.interventions + 1, reclaimed: s.reclaimed + Math.floor(Math.random() * 20) + 15 }))
         }
         if (entry.type === 'escalate') setSessionState('ELEVATED')
-        if (entry.type === 'synthesis' && !letterStarted) setLetterStarted(true)
       }, entry.delay)
     )
     return () => timeouts.forEach(clearTimeout)
   }, [backendConnected, connecting])
-
-  // Letter typing
-  useEffect(() => {
-    if (!letterStarted) return
-    const iv = setInterval(() => {
-      setLetterChars(c => {
-        if (c >= LETTER_TEXT.length) { clearInterval(iv); return c }
-        return c + 1
-      })
-    }, 28)
-    return () => clearInterval(iv)
-  }, [letterStarted])
 
   // Auto-scroll ticker
   useEffect(() => {
@@ -532,7 +654,7 @@ function ActiveSession({ onEnd, credentials }) {
 
   const handleEnd = () => {
     if (backendConnected) fetch(`${API_URL}/api/session/stop`, { method: 'POST' }).catch(() => {})
-    onEnd()
+    setShowSummary(true)
   }
 
   const handle2FASubmit = async () => {
@@ -560,6 +682,23 @@ function ActiveSession({ onEnd, credentials }) {
     } catch { /* ignore */ }
   }
 
+  const handleSpeak = (agentId, text) => {
+    console.log(`[TTS] ${AGENT_META[agentId]?.label}: ${text}`)
+  }
+
+  // ── Session Summary view ──────────────────────────────────────────────
+  if (showSummary) {
+    return (
+      <SessionSummary
+        stats={stats}
+        messages={messages}
+        sessionTime={sessionTime}
+        onBack={onEnd}
+      />
+    )
+  }
+
+  // ── Active session view ───────────────────────────────────────────────
   const stateStyle = STATE_COLORS[sessionState]
 
   return (
@@ -580,7 +719,7 @@ function ActiveSession({ onEnd, credentials }) {
       {/* Trifold grid */}
       <div className="dash-grid">
 
-        {/* ── Left: Live Feed (40%) ─────────────────────────────────── */}
+        {/* ── Left: Live Feed ──────────────────────────────────────────── */}
         <motion.div
           className="dash-panel dash-feed"
           initial={{ opacity: 0, x: -20 }}
@@ -608,7 +747,7 @@ function ActiveSession({ onEnd, credentials }) {
               </div>
             )}
 
-            {/* Intervention overlay — flashes when brain rot is blocked */}
+            {/* Intervention overlay */}
             <AnimatePresence>
               {interventionMsg && (
                 <motion.div
@@ -632,7 +771,7 @@ function ActiveSession({ onEnd, credentials }) {
               )}
             </AnimatePresence>
 
-            {/* 2FA overlay with code input */}
+            {/* 2FA overlay */}
             {needs2FA && (
               <div className="dash-2fa-overlay">
                 <div className="dash-2fa-card">
@@ -667,7 +806,7 @@ function ActiveSession({ onEnd, credentials }) {
           </div>
         </motion.div>
 
-        {/* ── Center: Agent Comms + Letter (30%) ────────────────────── */}
+        {/* ── Center: Ticker + Command Center ──────────────────────────── */}
         <div className="dash-center">
           <motion.div
             className="dash-panel dash-ticker"
@@ -715,64 +854,50 @@ function ActiveSession({ onEnd, credentials }) {
           </motion.div>
 
           <motion.div
-            className="dash-panel dash-letter"
+            className="dash-panel dash-chat"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.35 }}
           >
             <div className="dash-panel-header">
-              <span className="dash-panel-dot dash-panel-dot--amber" />
-              <span className="dash-panel-title">Letter from the Algorithm</span>
-            </div>
-            <div className="dash-letter-body">
-              {letterChars > 0 ? (
-                <p className="dash-letter-text">
-                  {LETTER_TEXT.slice(0, letterChars)}
-                  <span className="dash-letter-cursor" />
-                </p>
-              ) : (
-                <p className="dash-letter-waiting">Waiting for first detection...</p>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* ── Right: Command Center (30%) ───────────────────────────── */}
-        <motion.div
-          className="dash-right"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-        >
-          {/* Agent cards */}
-          <div className="dash-panel dash-agents">
-            <div className="dash-panel-header">
-              <span className="dash-panel-dot dash-panel-dot--blue" />
-              <span className="dash-panel-title">Agent Swarm</span>
-              <span className="dash-panel-status">{activeAgents.size} active</span>
-            </div>
-            {bureauInfo && (
-              <div className="dash-bureau-bar">
-                <span className="dash-bureau-badge">Fetch.ai uAgents</span>
-                <span className="dash-bureau-detail">Bureau :{bureauInfo.port}</span>
-                <span className="dash-bureau-dot" />
-                <span className="dash-bureau-detail">{bureauInfo.status}</span>
-              </div>
-            )}
-            <div className="dash-agents-list">
-              {Object.keys(AGENT_META).map(id => (
-                <AgentCard key={id} agentId={id} isActive={activeAgents.has(id)} agentAddress={agentAddresses[id]} />
-              ))}
-            </div>
-          </div>
-
-          {/* User chat */}
-          <div className="dash-panel dash-chat">
-            <div className="dash-panel-header">
               <span className="dash-panel-dot dash-panel-dot--green" />
               <span className="dash-panel-title">Command Center</span>
             </div>
             <UserChat chatMessages={chatMessages} onSend={handleChatSend} />
+          </motion.div>
+        </div>
+
+        {/* ── Right: Agent Fleet ───────────────────────────────────────── */}
+        <motion.div
+          className="dash-panel dash-fleet"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
+        >
+          <div className="dash-panel-header">
+            <span className="dash-panel-dot dash-panel-dot--blue" />
+            <span className="dash-panel-title">Agent Fleet</span>
+            <span className="dash-panel-status">{activeAgents.size} active</span>
+          </div>
+          {bureauInfo && (
+            <div className="dash-bureau-bar">
+              <span className="dash-bureau-badge">Fetch.ai uAgents</span>
+              <span className="dash-bureau-detail">Bureau :{bureauInfo.port}</span>
+              <span className="dash-bureau-dot" />
+              <span className="dash-bureau-detail">{bureauInfo.status}</span>
+            </div>
+          )}
+          <div className="dash-fleet-list">
+            {Object.keys(AGENT_META).map(id => (
+              <AgentCard
+                key={id}
+                agentId={id}
+                isActive={activeAgents.has(id)}
+                agentAddress={agentAddresses[id]}
+                messages={messages}
+                onSpeak={handleSpeak}
+              />
+            ))}
           </div>
         </motion.div>
       </div>
