@@ -64,6 +64,11 @@ const AGENT_META = {
   synthesis:  { icon: 'A', color: '#1e8449', label: 'Synthesis Agent', role: 'Letter & Narration' },
 }
 
+function truncAddr(addr) {
+  if (!addr) return ''
+  return addr.slice(0, 12) + '...' + addr.slice(-6)
+}
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -233,7 +238,7 @@ function Lobby({ user, profile, onStart, saveSocialCreds }) {
    AGENT CARD
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function AgentCard({ agentId, isActive }) {
+function AgentCard({ agentId, isActive, agentAddress }) {
   const meta = AGENT_META[agentId]
   if (!meta) return null
 
@@ -245,6 +250,9 @@ function AgentCard({ agentId, isActive }) {
       <div className="ac-info">
         <span className="ac-name">{meta.label}</span>
         <span className="ac-role">{meta.role}</span>
+        {agentAddress && (
+          <span className="ac-addr" title={agentAddress}>{truncAddr(agentAddress)}</span>
+        )}
       </div>
       <div className={`ac-dot ${isActive ? 'ac-dot--on' : ''}`} />
     </div>
@@ -255,23 +263,49 @@ function AgentCard({ agentId, isActive }) {
    USER CHAT
    ═══════════════════════════════════════════════════════════════════════════ */
 
+const MENTION_AGENTS = ['boss', 'classifier', 'context', 'strategist', 'synthesis']
+
 function UserChat({ chatMessages, onSend }) {
   const [input, setInput] = useState('')
   const chatEndRef = useRef(null)
   const [sending, setSending] = useState(false)
+  const [showMentions, setShowMentions] = useState(false)
+  const [mentionFilter, setMentionFilter] = useState('')
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
 
+  const handleChange = (e) => {
+    const val = e.target.value
+    setInput(val)
+    const atMatch = val.match(/@(\w*)$/)
+    if (atMatch) {
+      setShowMentions(true)
+      setMentionFilter(atMatch[1].toLowerCase())
+    } else {
+      setShowMentions(false)
+    }
+  }
+
+  const handleMentionSelect = (agent) => {
+    const before = input.replace(/@\w*$/, '')
+    setInput(`@${agent} ${before}`.trim().replace(/^(.+)(@)/, '$2') || `@${agent} `)
+    setInput(`@${agent} `)
+    setShowMentions(false)
+  }
+
   const handleSend = async () => {
     const msg = input.trim()
     if (!msg || sending) return
     setInput('')
+    setShowMentions(false)
     setSending(true)
     await onSend(msg)
     setSending(false)
   }
+
+  const filtered = MENTION_AGENTS.filter(a => a.startsWith(mentionFilter))
 
   return (
     <div className="uc">
@@ -279,7 +313,8 @@ function UserChat({ chatMessages, onSend }) {
         {chatMessages.length === 0 && (
           <div className="uc-empty">
             <p>Talk to your agents</p>
-            <span>"Go more aggressive" · "Why did you flag that?" · "How much time saved?"</span>
+            <span>Type @ to mention a specific agent</span>
+            <span className="uc-empty-examples">"@classifier why did you flag that?" · "@context what state?" · "go more aggressive"</span>
           </div>
         )}
         {chatMessages.map((m, i) => (
@@ -294,13 +329,26 @@ function UserChat({ chatMessages, onSend }) {
         ))}
         <div ref={chatEndRef} />
       </div>
+
+      {showMentions && filtered.length > 0 && (
+        <div className="uc-mentions">
+          {filtered.map(agent => (
+            <button key={agent} className="uc-mention-item" onClick={() => handleMentionSelect(agent)}>
+              <span className="uc-mention-icon" style={{ color: AGENT_META[agent]?.color }}>{AGENT_META[agent]?.icon}</span>
+              <span className="uc-mention-name">@{agent}</span>
+              <span className="uc-mention-role">{AGENT_META[agent]?.role}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="uc-input-row">
         <input
           className="uc-input"
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={handleChange}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Talk to your agents..."
+          placeholder="Talk to your agents... (type @ to mention)"
           disabled={sending}
         />
         <button className="uc-send" onClick={handleSend} disabled={sending || !input.trim()}>
@@ -335,6 +383,9 @@ function ActiveSession({ onEnd, credentials }) {
 
   const [activeAgents, setActiveAgents] = useState(new Set())
   const [chatMessages, setChatMessages] = useState([])
+  const [agentAddresses, setAgentAddresses] = useState({})
+  const [bureauInfo, setBureauInfo] = useState(null)
+  const [interventionMsg, setInterventionMsg] = useState(null)
 
   // Session timer
   useEffect(() => {
@@ -370,6 +421,20 @@ function ActiveSession({ onEnd, credentials }) {
     }
 
     startSession()
+
+    // Fetch real Fetch.ai agent addresses + Bureau info
+    fetch(`${API_URL}/api/agents`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return
+        if (data.agents) {
+          const addrMap = {}
+          data.agents.forEach(a => { addrMap[a.id] = a.address })
+          setAgentAddresses(addrMap)
+        }
+        if (data.bureau) setBureauInfo(data.bureau)
+      })
+      .catch(() => {})
 
     return () => {
       cancelled = true
@@ -416,6 +481,13 @@ function ActiveSession({ onEnd, credentials }) {
       }
       if (data.type === 'chat') {
         setChatMessages(prev => [...prev, data])
+      }
+      if (data.type === 'letter_append' && data.paragraph) {
+        setLetterStarted(true)
+      }
+      if (data.type === 'intervention_overlay') {
+        setInterventionMsg(data.message)
+        setTimeout(() => setInterventionMsg(null), 4000)
       }
     }
 
@@ -536,6 +608,30 @@ function ActiveSession({ onEnd, credentials }) {
               </div>
             )}
 
+            {/* Intervention overlay — flashes when brain rot is blocked */}
+            <AnimatePresence>
+              {interventionMsg && (
+                <motion.div
+                  className="dash-intervention-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="dash-intervention-card">
+                    <div className="dash-intervention-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                    </div>
+                    <p className="dash-intervention-msg">{interventionMsg}</p>
+                    <span className="dash-intervention-tag">BLOCKED BY AGENT SWARM</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* 2FA overlay with code input */}
             {needs2FA && (
               <div className="dash-2fa-overlay">
@@ -582,6 +678,7 @@ function ActiveSession({ onEnd, credentials }) {
             <div className="dash-panel-header">
               <span className="dash-panel-dot dash-panel-dot--green" />
               <span className="dash-panel-title">Agent Communication</span>
+              {bureauInfo && <span className="dash-panel-proto">uAgents Protocol</span>}
               <span className="dash-panel-live">LIVE</span>
             </div>
             <div className="dash-ticker-body" ref={tickerRef}>
@@ -601,6 +698,10 @@ function ActiveSession({ onEnd, credentials }) {
                       <span className="dash-ticker-to">{m.to}</span>
                     </span>
                     <span className="dash-ticker-msg">{m.msg}</span>
+                    {m.type === 'dispatch' && <span className="dash-ticker-proto">ctx.send</span>}
+                    {m.type === 'alert' && <span className="dash-ticker-proto">on_message</span>}
+                    {m.type === 'verdict' && <span className="dash-ticker-proto">send_and_receive</span>}
+                    {m.type === 'clear' && <span className="dash-ticker-proto">on_message</span>}
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -650,9 +751,17 @@ function ActiveSession({ onEnd, credentials }) {
               <span className="dash-panel-title">Agent Swarm</span>
               <span className="dash-panel-status">{activeAgents.size} active</span>
             </div>
+            {bureauInfo && (
+              <div className="dash-bureau-bar">
+                <span className="dash-bureau-badge">Fetch.ai uAgents</span>
+                <span className="dash-bureau-detail">Bureau :{bureauInfo.port}</span>
+                <span className="dash-bureau-dot" />
+                <span className="dash-bureau-detail">{bureauInfo.status}</span>
+              </div>
+            )}
             <div className="dash-agents-list">
               {Object.keys(AGENT_META).map(id => (
-                <AgentCard key={id} agentId={id} isActive={activeAgents.has(id)} />
+                <AgentCard key={id} agentId={id} isActive={activeAgents.has(id)} agentAddress={agentAddresses[id]} />
               ))}
             </div>
           </div>
