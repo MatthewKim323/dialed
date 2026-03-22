@@ -365,15 +365,27 @@ export default function Landing() {
           <ScrollHint />
         </section>
 
-        <div className="marquee" aria-hidden>
-          <div className="marquee-track">
-            {[...Array(2)].map((_, copy) => (
-              <div className="marquee-content" key={copy}>
-                {['Scout', 'Classify', 'Intervene', 'Real-time defense', 'AI agents', 'Mental health', 'Brain rot detection', 'Feed analysis'].map(t => (
-                  <span key={t}>{t}<span className="marquee-dot">·</span></span>
-                ))}
-              </div>
-            ))}
+        <div className="tech-marquee-wrap">
+          <span className="tech-marquee-label">built with:</span>
+          <div className="marquee" aria-hidden>
+            <div className="marquee-track">
+              {[...Array(6)].map((_, copy) => (
+                <div className="marquee-content marquee-content--logos" key={copy}>
+                  {[
+                    { name: 'Fetch.ai',    src: 'https://fetch.ai/favicon.ico' },
+                    { name: 'Anthropic',   src: 'https://www.anthropic.com/favicon.ico' },
+                    { name: 'ElevenLabs',  src: 'https://elevenlabs.io/favicon.ico' },
+                    { name: 'browser-use', src: 'https://browser-use.com/favicon.ico' },
+                    { name: 'Supabase',    src: 'https://supabase.com/favicon/favicon-32x32.png' },
+                    { name: 'React',       src: 'https://react.dev/favicon-32x32.png' },
+                    { name: 'Vite',        src: 'https://vite.dev/logo.svg' },
+                    { name: 'Python',      src: 'https://www.python.org/static/favicon.ico' },
+                  ].map(t => (
+                    <img key={t.name} src={t.src} alt={t.name} className="tech-logo-icon" />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -653,7 +665,7 @@ export default function Landing() {
           <div className="marquee-track marquee-track--reverse">
             {[...Array(2)].map((_, copy) => (
               <div className="marquee-content" key={copy}>
-                {['Fetch.ai', 'Claude Sonnet', 'ElevenLabs', 'browser-use', 'Chromium', 'Supabase', 'React', 'Vite', 'DOM injection'].map(t => (
+                {['Scout', 'Classify', 'Intervene', 'Real-time defense', 'AI agents', 'Mental health', 'Brain rot detection', 'Feed analysis'].map(t => (
                   <span key={t}>{t}<span className="marquee-dot">·</span></span>
                 ))}
               </div>
