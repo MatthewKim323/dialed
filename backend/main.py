@@ -295,11 +295,8 @@ async def scout_loop():
         return
 
     # ══════════════════════════════════════════════════════════════════
-    #  CLOSED-LOOP PIPELINE
-    #  Step 1: Extract (browser agent reads current Reel, does NOT scroll)
-    #  Step 2: Analyze (Fetch.ai Bureau — Classifier, Context, etc.)
-    #  Step 3: Act (browser agent likes/interacts OR skips, then scrolls)
-    #  Step 4: Repeat from Step 1 on the next Reel
+    #  SEQUENTIAL PIPELINE — extract → analyze → act → scroll → repeat
+    #  The browser agent does NOTHING until the pipeline decides.
     # ══════════════════════════════════════════════════════════════════
     session_start = asyncio.get_event_loop().time()
     await set_agent_active("boss", False)
@@ -308,37 +305,70 @@ async def scout_loop():
         try:
             state.content_index += 1
             idx = state.content_index
+            print(f"\n{'='*60}", flush=True)
+            print(f"  PIPELINE ITERATION #{idx}", flush=True)
+            print(f"{'='*60}", flush=True)
 
-            # ── STEP 1: EXTRACT (no scrolling) ────────────────────────
+            # ── STEP 1: EXTRACT ───────────────────────────────────────
+            # Browser agent ONLY reads. No scrolling, no tapping, nothing.
+            print(f"  [1/4] Extracting content from Reel #{idx}...", flush=True)
             await broadcast({
                 "type": "ticker", "from": "Scout", "to": "System",
                 "msg": f"Reading Reel #{idx}...",
                 "msg_type": "system",
             })
 
-            result = await client.run(
-                "Look at the current Instagram Reel on screen. Extract the following "
-                "WITHOUT scrolling or interacting with anything:\n"
-                "- The full caption text (or empty string if not visible)\n"
-                "- The creator's handle / username\n"
-                "- The visible like count (or 'N/A')\n"
-                "- The visible comment count (or 'N/A')\n"
-                "- A brief visual description of what the Reel shows\n"
-                "Do NOT scroll. Do NOT tap anything. Just read and return the data.",
-                session_id=session_id,
-                output_schema=ReelContent,
-            )
+            try:
+                result = await client.run(
+                    "You are looking at an Instagram Reel. "
+                    "Your ONLY job is to READ what is on screen and report back. "
+                    "DO NOT scroll. DO NOT tap. DO NOT like. DO NOT interact in ANY way. "
+                    "Just read and extract:\n"
+                    "1. The caption text\n"
+                    "2. The creator username/handle\n"
+                    "3. The like count\n"
+                    "4. The comment count\n"
+                    "5. A brief description of what you see in the video\n"
+                    "Report the data and STOP. Do absolutely nothing else.",
+                    session_id=session_id,
+                    output_schema=ReelContent,
+                )
+                reel = result.output
+            except Exception as e:
+                print(f"  ❌ Extraction failed: {e}", flush=True)
+                await broadcast({
+                    "type": "ticker", "from": "Scout", "to": "System",
+                    "msg": f"Extraction error on #{idx} — advancing.",
+                    "msg_type": "system",
+                })
+                try:
+                    await client.run(
+                        "Swipe up once to go to the next Reel. Do nothing else.",
+                        session_id=session_id,
+                    )
+                except Exception:
+                    pass
+                await asyncio.sleep(2)
+                continue
 
-            reel = result.output
             state.stats["scanned"] += 1
+            print(f"  ✅ Extracted: @{reel.creator_handle} — \"{reel.caption_text[:60]}\"", flush=True)
 
             await broadcast({
                 "type": "ticker", "from": "Scout", "to": "Boss",
-                "msg": f'ContentPayload #{idx} — @{reel.creator_handle} — "{reel.caption_text[:80]}" — {reel.like_count} likes',
+                "msg": f'#{idx} — @{reel.creator_handle} — "{reel.caption_text[:60]}"',
                 "msg_type": "payload",
             })
 
-            # ── STEP 2: ANALYZE (Fetch.ai Bureau) ─────────────────────
+            # ── STEP 2: ANALYZE ───────────────────────────────────────
+            # Send to Fetch.ai Bureau. Browser agent is IDLE during this.
+            print(f"  [2/4] Sending to Fetch.ai pipeline for analysis...", flush=True)
+            await broadcast({
+                "type": "ticker", "from": "Boss", "to": "Classifier + Context",
+                "msg": f"Analyzing #{idx} — waiting for verdict...",
+                "msg_type": "dispatch",
+            })
+
             elapsed = int(asyncio.get_event_loop().time() - session_start)
             content_req = {
                 "content_index": idx,
@@ -357,39 +387,39 @@ async def scout_loop():
             pipeline_result = await send_to_boss(content_req)
 
             if not pipeline_result:
-                # Analysis failed — scroll past without liking, try next
+                print(f"  ⚠️  Analysis returned nothing — skipping post.", flush=True)
                 await broadcast({
                     "type": "ticker", "from": "Boss", "to": "Scout",
-                    "msg": f"Analysis failed for #{idx} — skipping without interaction.",
+                    "msg": f"Analysis failed for #{idx} — skipping.",
                     "msg_type": "system",
                 })
-                await client.run(
-                    "Scroll down to advance to the next Reel and wait for it to load. "
-                    "Do NOT like or interact with anything.",
-                    session_id=session_id,
-                )
-                await asyncio.sleep(1)
+                try:
+                    await client.run(
+                        "Swipe up once to go to the next Reel. Do nothing else.",
+                        session_id=session_id,
+                    )
+                except Exception:
+                    pass
+                await asyncio.sleep(2)
                 continue
 
             is_brain_rot = pipeline_result.get("is_brain_rot", False)
             overlay_msg = pipeline_result.get("overlay_message", "")
+            confidence = pipeline_result.get("confidence", 0)
             new_state = pipeline_result.get("session_state")
             if new_state:
                 state.session_state = new_state
 
-            await broadcast({"type": "stats", **state.stats})
+            print(f"  ✅ Verdict: brain_rot={is_brain_rot} confidence={confidence}", flush=True)
 
-            # ── STEP 3: ACT (browser agent executes the verdict) ──────
+            # ── STEP 3: ACT ───────────────────────────────────────────
+            # Browser agent executes ONE action based on the verdict.
             if is_brain_rot:
                 state.stats["detected"] += 1
                 state.stats["interventions"] += 1
                 state.stats["reclaimed"] += 15
 
-                await broadcast({
-                    "type": "ticker", "from": "Strategist", "to": "Scout",
-                    "msg": f"SKIP #{idx} — brain rot confirmed. Scrolling past.",
-                    "msg_type": "intervention",
-                })
+                print(f"  [3/4] BRAIN ROT — blocking account @{reel.creator_handle}...", flush=True)
 
                 if overlay_msg:
                     await broadcast({
@@ -397,57 +427,100 @@ async def scout_loop():
                         "message": overlay_msg,
                         "content_index": idx,
                     })
-                    await asyncio.sleep(2)
 
-                await client.run(
-                    "The current Reel has been flagged as harmful content. "
-                    "Do NOT like it. Do NOT interact with it. "
-                    "Scroll down to advance to the next Reel and wait for it to load.",
-                    session_id=session_id,
-                )
+                await broadcast({
+                    "type": "ticker", "from": "Strategist", "to": "Scout",
+                    "msg": f"BLOCK #{idx} — @{reel.creator_handle} flagged. Blocking account.",
+                    "msg_type": "intervention",
+                })
+
+                # Block the account: tap 3 dots → Block → Confirm
+                try:
+                    await client.run(
+                        "This Reel has been identified as harmful brain rot content. "
+                        "DO NOT like it. I need you to block this account. "
+                        "Tap the three dots (⋯) or the ellipsis menu icon on the Reel. "
+                        "Then tap 'Block' from the menu options. "
+                        "If a confirmation dialog appears, confirm the block. "
+                        "After blocking, STOP. Do not scroll or do anything else.",
+                        session_id=session_id,
+                    )
+                    print(f"  ✅ Blocked @{reel.creator_handle}", flush=True)
+                except Exception as e:
+                    print(f"  ⚠️  Block action failed: {e}", flush=True)
 
                 await broadcast({
                     "type": "ticker", "from": "Scout", "to": "System",
-                    "msg": f"Skipped #{idx}. Moved to next Reel.",
-                    "msg_type": "system",
+                    "msg": f"Blocked @{reel.creator_handle}. Advancing.",
+                    "msg_type": "intervention",
                 })
+
             else:
+                print(f"  [3/4] CLEAR — liking Reel #{idx}...", flush=True)
+
                 await broadcast({
                     "type": "ticker", "from": "Boss", "to": "Scout",
-                    "msg": f"CLEAR #{idx} — content is safe. Engaging + advancing.",
+                    "msg": f"CLEAR #{idx} — content approved. Liking.",
                     "msg_type": "clear",
                 })
 
-                await client.run(
-                    "The current Reel has been approved as safe content. "
-                    "Double-tap the Reel to like it. "
-                    "Then scroll down to advance to the next Reel and wait for it to load.",
-                    session_id=session_id,
-                )
+                # Like: double-tap the reel. That's it.
+                try:
+                    await client.run(
+                        "This Reel has been approved as safe content. "
+                        "Double-tap the center of the Reel video to like it. "
+                        "After liking, STOP. Do not scroll or do anything else.",
+                        session_id=session_id,
+                    )
+                    print(f"  ✅ Liked Reel #{idx}", flush=True)
+                except Exception as e:
+                    print(f"  ⚠️  Like action failed: {e}", flush=True)
 
                 await broadcast({
                     "type": "ticker", "from": "Scout", "to": "System",
-                    "msg": f"Liked + advanced past #{idx}. Ready for next.",
-                    "msg_type": "system",
+                    "msg": f"Liked #{idx}.",
+                    "msg_type": "clear",
                 })
 
             await broadcast({"type": "stats", **state.stats})
 
-            # Brief pause before next cycle
+            # ── STEP 4: SCROLL ────────────────────────────────────────
+            # Separate step: advance to next Reel. Nothing else.
+            print(f"  [4/4] Scrolling to next Reel...", flush=True)
             await asyncio.sleep(1)
+
+            try:
+                await client.run(
+                    "Swipe up once to scroll to the next Instagram Reel. "
+                    "Wait for the next Reel to fully load. "
+                    "Then STOP. Do not read, like, or interact with anything.",
+                    session_id=session_id,
+                )
+                print(f"  ✅ Advanced to next Reel.", flush=True)
+            except Exception as e:
+                print(f"  ⚠️  Scroll failed: {e}", flush=True)
+
+            await broadcast({
+                "type": "ticker", "from": "Scout", "to": "System",
+                "msg": f"Ready for next Reel.",
+                "msg_type": "system",
+            })
+
+            # Pause before next pipeline iteration
+            await asyncio.sleep(2)
 
         except asyncio.CancelledError:
             break
         except Exception as e:
+            print(f"  ❌ PIPELINE ERROR: {e}", flush=True)
             await broadcast({
                 "type": "ticker", "from": "Scout", "to": "System",
                 "msg": f"Pipeline error: {str(e)[:120]}",
                 "msg_type": "system",
             })
-            # On error, try to scroll past the current Reel and continue
             try:
                 await client.run(
-                    "Scroll down to advance to the next Reel.",
+                    "Swipe up once to go to the next Reel. Do nothing else.",
                     session_id=session_id,
                 )
             except Exception:
