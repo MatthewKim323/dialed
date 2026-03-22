@@ -468,11 +468,11 @@ export default function Landing() {
 
           <div className="voice-agents">
             {[
-              { initial: 'B', name: 'Boss',       tone: 'Authoritative · steady cadence' },
-              { initial: 'C', name: 'Classifier',  tone: 'Clinical · flat affect' },
-              { initial: 'X', name: 'Context',     tone: 'Cautious · measured pace' },
-              { initial: 'S', name: 'Strategist',  tone: 'Decisive · crisp delivery' },
-              { initial: 'A', name: 'Synthesis',   tone: 'Cold · confessional calm' },
+              { initial: 'B', name: 'Boss',       tone: 'Authoritative · crisp delivery' },
+              { initial: 'C', name: 'Classifier',  tone: 'Sharp · analytical cadence' },
+              { initial: 'X', name: 'Context',     tone: 'Warm · measured pace' },
+              { initial: 'S', name: 'Strategist',  tone: 'Confident · rhythmic flow' },
+              { initial: 'A', name: 'Synthesis',   tone: 'Smooth · unsettling calm' },
             ].map((a, i) => (
               <Reveal key={a.name} delay={i * 0.08}>
                 <div className="voice-card">
