@@ -99,8 +99,8 @@ const FEATURES = [
   {
     num: '01',
     title: 'Scout',
-    desc: 'An autonomous browser agent logs into your account, navigates your live feed, and captures every piece of content as a structured payload — screenshot, metadata, and engagement signals.',
-    detail: 'browser-use · headless Chromium · 2–4 fps stream',
+    desc: 'An autonomous browser agent logs into your account, navigates your live feed, and extracts every piece of content as a structured payload — captions, creator handles, engagement metrics, and visual descriptions.',
+    detail: 'browser-use Cloud · live_url iframe · Pydantic structured output',
   },
   {
     num: '02',
@@ -490,42 +490,76 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="command-center">
-          <Reveal>
-            <p className="section-label">User control</p>
-            <h2 className="section-heading">
-              You command<br />the swarm.
-            </h2>
-          </Reveal>
+        <section className="confession">
+          <div className="confession-layout">
+            <div className="confession-text">
+              <Reveal>
+                <p className="section-label">Summary</p>
+                <h2 className="section-heading">
+                  The confession.
+                </h2>
+              </Reveal>
 
-          <Reveal delay={0.1}>
-            <p className="cmd-intro">
-              This isn't a passive demo. Talk to your agents mid-session — adjust aggressiveness, whitelist creators, ask for explanations. They respond in their own voice.
-            </p>
-          </Reveal>
-
-          <Reveal delay={0.15}>
-            <div className="cmd-chat-demo">
-              {[
-                { role: 'user',  text: 'Go more aggressive.' },
-                { role: 'agent', agent: 'Context', text: 'Shifting to Elevated state. Thresholds tightened — near-zero tolerance active.' },
-                { role: 'user',  text: 'Why did you flag that last one?' },
-                { role: 'agent', agent: 'Classifier', text: 'Rage bait detected. Outrage amplification pattern with 0.91 confidence. Creator @drama_daily_tea flagged twice this session.' },
-                { role: 'user',  text: 'How much time have you saved me?' },
-                { role: 'agent', agent: 'Boss', text: '23 Reels scanned. 9 brain rot detections. 6 interventions. 4 min 12 sec reclaimed.' },
-              ].map((m, i) => (
-                <Reveal key={i} delay={i * 0.08}>
-                  <div className={`cmd-bubble cmd-bubble--${m.role}`}>
-                    {m.agent && <span className="cmd-agent">{m.agent}</span>}
-                    <span>{m.text}</span>
-                  </div>
-                </Reveal>
-              ))}
-              <div className="cmd-input-mock">
-                <span>Talk to your agents...</span>
-              </div>
+              <Reveal delay={0.1}>
+                <p className="confession-intro">
+                  After each session, Dialed generates a plain-language summary of everything it caught and every action it took — so you know exactly what happened while you were scrolling.
+                </p>
+              </Reveal>
             </div>
-          </Reveal>
+
+            <Reveal delay={0.15}>
+              <div className="confession-quote">
+                <blockquote>
+                  "Session lasted 14 minutes. 23 Reels scanned. 9 pieces of brain rot detected — 4 rage bait, 3 outrage amplification, 2 parasocial traps. 6 interventions fired: 3 warning overlays, 2 content replacements, 1 hard redirect. Creators @drama_daily_tea and @viral.rage.clips flagged multiple times. 4 minutes and 12 seconds of attention reclaimed. Session state reached Elevated at the 8-minute mark."
+                </blockquote>
+                <cite className="confession-cite">
+                  — Session report generated automatically by the Synthesis agent
+                </cite>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        <section className="command-center">
+          <div className="cmd-layout">
+            <div className="cmd-text">
+              <Reveal>
+                <p className="section-label">User control</p>
+                <h2 className="section-heading">
+                  You command<br />the swarm.
+                </h2>
+              </Reveal>
+
+              <Reveal delay={0.1}>
+                <p className="cmd-intro">
+                  This isn't a passive demo. Talk to your agents mid-session — adjust aggressiveness, whitelist creators, ask for explanations. They respond in their own voice.
+                </p>
+              </Reveal>
+            </div>
+
+            <Reveal delay={0.15}>
+              <div className="cmd-chat-demo">
+                {[
+                  { role: 'user',  text: 'Go more aggressive.' },
+                  { role: 'agent', agent: 'Context', text: 'Shifting to Elevated state. Thresholds tightened — near-zero tolerance active.' },
+                  { role: 'user',  text: 'Why did you flag that last one?' },
+                  { role: 'agent', agent: 'Classifier', text: 'Rage bait detected. Outrage amplification pattern with 0.91 confidence. Creator @drama_daily_tea flagged twice this session.' },
+                  { role: 'user',  text: 'How much time have you saved me?' },
+                  { role: 'agent', agent: 'Boss', text: '23 Reels scanned. 9 brain rot detections. 6 interventions. 4 min 12 sec reclaimed.' },
+                ].map((m, i) => (
+                  <Reveal key={i} delay={i * 0.08}>
+                    <div className={`cmd-bubble cmd-bubble--${m.role}`}>
+                      {m.agent && <span className="cmd-agent">{m.agent}</span>}
+                      <span>{m.text}</span>
+                    </div>
+                  </Reveal>
+                ))}
+                <div className="cmd-input-mock">
+                  <span>Talk to your agents...</span>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </section>
 
         <div className="marquee marquee--reverse" aria-hidden>
